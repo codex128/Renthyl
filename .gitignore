@@ -1,0 +1,12 @@
+/dist/
+/build/
+/nbproject/
+/nbproject/private/
+/resources/desktop-deployment/
+/*.so
+/*.dll
+*.gltf
+*.glb
+*.xcf
+*.blend1
+*.log
