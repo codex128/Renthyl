@@ -1,7 +1,7 @@
 #import "Common/ShaderLib/GLSLCompat.glsllib"
-#import "Common/ShaderLib/Deferred.glsllib"
+#import "FrameGraphCommon/ShaderLib/Deferred.glsllib"
 // shading model
-#import "Common/ShaderLib/ShadingModel.glsllib"
+#import "FrameGraphCommon/ShaderLib/DeferredShadingModel.glsllib"
 uniform sampler2D m_Alpha;
 uniform sampler2D m_Tex1;
 uniform sampler2D m_Tex2;

@@ -1,7 +1,7 @@
 #import "Common/ShaderLib/GLSLCompat.glsllib"
-#import "Common/ShaderLib/Deferred.glsllib"
+#import "FrameGraphCommon/ShaderLib/Deferred.glsllib"
 // shading model
-#import "Common/ShaderLib/ShadingModel.glsllib"
+#import "FrameGraphCommon/ShaderLib/DeferredShadingModel.glsllib"
 
 #if defined(HAS_GLOWMAP) || defined(HAS_COLORMAP) || (defined(HAS_LIGHTMAP) && !defined(SEPARATE_TEXCOORD))
     #define NEED_TEXCOORD1

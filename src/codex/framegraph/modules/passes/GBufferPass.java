@@ -141,4 +141,8 @@ public class GBufferPass extends RenderPass implements GeometryRenderHandler {
         return true;
     }
     
+    public static void addMaterialAdaption(String matdef, String technique) {
+        adapter.add(matdef, technique);
+    }
+    
 }

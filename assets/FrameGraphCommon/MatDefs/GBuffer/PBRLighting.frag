@@ -2,12 +2,9 @@
 #import "Common/ShaderLib/PBR.glsllib"
 #import "Common/ShaderLib/Parallax.glsllib"
 #import "Common/ShaderLib/Lighting.glsllib"
-#import "Common/ShaderLib/Deferred.glsllib"
-
-// shading model
-#import "Common/ShaderLib/ShadingModel.glsllib"
-// octahedral
-#import "Common/ShaderLib/Octahedral.glsllib"
+#import "FrameGraphCommon/ShaderLib/Deferred.glsllib"
+#import "FrameGraphCommon/ShaderLib/DeferredShadingModel.glsllib"
+#import "FrameGraphCommon/ShaderLib/Octahedral.glsllib"
 
 varying vec2 texCoord;
 #ifdef SEPARATE_TEXCOORD

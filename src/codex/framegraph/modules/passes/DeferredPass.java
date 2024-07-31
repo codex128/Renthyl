@@ -35,6 +35,7 @@ import codex.framegraph.FGRenderContext;
 import codex.framegraph.FrameGraph;
 import codex.framegraph.ResourceTicket;
 import codex.framegraph.definitions.TextureDef;
+import codex.framegraph.util.ProbeRenderUtils;
 import com.jme3.asset.AssetManager;
 import com.jme3.export.InputCapsule;
 import com.jme3.export.JmeExporter;
@@ -48,7 +49,6 @@ import com.jme3.light.PointLight;
 import com.jme3.light.SpotLight;
 import com.jme3.material.Material;
 import com.jme3.material.TechniqueDef;
-import com.jme3.material.logic.SkyLightAndReflectionProbeRender;
 import com.jme3.material.logic.TechniqueDefLogic;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
@@ -218,7 +218,7 @@ public class DeferredPass extends RenderPass implements TechniqueDefLogic {
             if (amb == null) {
                 probeList = localProbeList;
                 // extract ambient and probes from light list
-                SkyLightAndReflectionProbeRender.extractSkyLightAndReflectionProbes(
+                ProbeRenderUtils.extractSkyLightAndReflectionProbes(
                         lights, ambientColor, probeList, true);
             } else {
                 // lights are already processed: get ambient and probes from resources
@@ -291,7 +291,7 @@ public class DeferredPass extends RenderPass implements TechniqueDefLogic {
                 Uniform sky = shader.getUniform("g_SkyLightData"+num);
                 Uniform coeffs = shader.getUniform("g_ShCoeffs"+num);
                 Uniform env = shader.getUniform("g_ReflectionEnvMap"+num);
-                lastTexUnit = SkyLightAndReflectionProbeRender.setSkyLightAndReflectionProbeData(
+                lastTexUnit = ProbeRenderUtils.setSkyLightAndReflectionProbeData(
                         rm, lastTexUnit, sky, coeffs, env, p);
                 if (i == MAX_PROBES) break;
             }

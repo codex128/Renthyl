@@ -1,9 +1,9 @@
 #import "Common/ShaderLib/GLSLCompat.glsllib"
 #import "Common/ShaderLib/BlinnPhongLighting.glsllib"
 #import "Common/ShaderLib/Lighting.glsllib"
-#import "Common/ShaderLib/Deferred.glsllib"
+#import "FrameGraphCommon/ShaderLib/Deferred.glsllib"
 // shading model
-#import "Common/ShaderLib/ShadingModel.glsllib"
+#import "FrameGraphCommon/ShaderLib/DeferredShadingModel.glsllib"
 
 uniform float m_Shininess;
 uniform vec4 g_AmbientLightColor;

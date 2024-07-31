@@ -3,12 +3,12 @@
 #import "Common/ShaderLib/PBR.glsllib"
 #import "Common/ShaderLib/Lighting.glsllib"
 #import "Common/MatDefs/Terrain/AfflictionLib.glsllib"
-#import "Common/ShaderLib/Deferred.glsllib"
+#import "FrameGraphCommon/ShaderLib/Deferred.glsllib"
 
 // shading model
-#import "Common/ShaderLib/ShadingModel.glsllib"
+#import "FrameGraphCommon/ShaderLib/DeferredShadingModel.glsllib"
 // octahedral
-#import "Common/ShaderLib/Octahedral.glsllib"
+#import "FrameGraphCommon/ShaderLib/Octahedral.glsllib"
 
 varying vec3 wPosition;
 varying vec3 vNormal;

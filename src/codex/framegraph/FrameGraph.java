@@ -173,7 +173,6 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
         if (cap != null) {
             cap.renderViewPort(context.getViewPort());
         }
-        if (prof != null) prof.vpStep(VpStep.FrameGraphSetup, vp, null);
         if (!rendered) {
             resources.beginRenderFrame(
                     pContext.getRenderObjects(), pContext.getEventCapture());
@@ -182,12 +181,10 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
         resources.applyFutureReferences();
         
         // cull modules and resources
-        if (prof != null) prof.vpStep(VpStep.FrameGraphCull, vp, null);
         launcher.countReferences();
         resources.cullUnreferenced();
         
         // execute
-        if (prof != null) prof.vpStep(VpStep.FrameGraphExecute, vp, null);
         context.pushRenderSettings();
         // execute threads in reverse order so that the 0th thread is executed
         // last on JME's main thread.
@@ -198,7 +195,6 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
         context.popFrameBuffer();
         
         // reset
-        if (prof != null) prof.vpStep(VpStep.FrameGraphReset, vp, null);
         launcher.resetRender(context);
         pContext.getRenderObjects().clearReservations();
         resources.clear();

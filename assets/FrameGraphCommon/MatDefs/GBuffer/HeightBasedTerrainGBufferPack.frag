@@ -1,7 +1,7 @@
 #import "Common/ShaderLib/GLSLCompat.glsllib"
-#import "Common/ShaderLib/Deferred.glsllib"
+#import "FrameGraphCommon/ShaderLib/Deferred.glsllib"
 // shading model
-#import "Common/ShaderLib/ShadingModel.glsllib"
+#import "FrameGraphCommon/ShaderLib/DeferredShadingModel.glsllib"
 uniform vec3 m_region1;
 uniform vec3 m_region2;
 uniform vec3 m_region3;

@@ -1,5 +1,5 @@
 #import "Common/ShaderLib/GLSLCompat.glsllib"
-#import "Common/ShaderLib/Deferred.glsllib"
+#import "FrameGraphCommon/ShaderLib/Deferred.glsllib"
 #import "Common/ShaderLib/Parallax.glsllib"
 #import "Common/ShaderLib/Optics.glsllib"
 #ifndef VERTEX_LIGHTING
@@ -7,7 +7,7 @@
     #import "Common/ShaderLib/Lighting.glsllib"
 #endif
 // shading model
-#import "Common/ShaderLib/ShadingModel.glsllib"
+#import "FrameGraphommon/ShaderLib/DeferredShadingModel.glsllib"
 
 // fog - jayfella
 #ifdef USE_FOG
