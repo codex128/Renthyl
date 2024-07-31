@@ -70,13 +70,13 @@ public class GBufferPass extends RenderPass implements GeometryRenderHandler {
     private static final MaterialAdapter adapter = new MaterialAdapter();
     
     static {
-        adapter.add("Common/MatDefs/Light/PBRLighting.j3md", "FrameGraphCommon/Techniques/GBuffer/PBRLighting.fgmt");
-        adapter.add("Common/MatDefs/Light/Lighting.j3md", "FrameGraphCommon/Techniques/GBuffer/Lighting.fgmt");
-        adapter.add("Common/MatDefs/Misc/Unshaded.j3md", "FrameGraphCommon/Techniques/GBuffer/Unshaded.fgmt");
-        adapter.add("Common/MatDefs/Terrain/Terrain.j3md", "FrameGraphCommon/Techniques/GBuffer/Terrain.fgmt");
-        adapter.add("Common/MatDefs/Terrain/PBRTerrain.j3md", "FrameGraphCommon/Techniques/GBuffer/PBRTerrain.fgmt");
-        adapter.add("Common/MatDefs/Terrain/AdvancedPBRTerrain.j3md", "FrameGraphCommon/Techniques/GBuffer/AdvacedPBRTerrain.fgmt");
-        adapter.add("Common/MatDefs/Terrain/TerrainLighting.j3md", "FrameGraphCommon/Techniques/GBuffer/TerrainLighting.fgmt");
+        adapter.add("Common/MatDefs/Light/PBRLighting.j3md", "FrameGraphCommon/MatDefs/GBuffer/PBRLighting.fgmt");
+        adapter.add("Common/MatDefs/Light/Lighting.j3md", "FrameGraphCommon/MatDefs/GBuffer/Lighting.fgmt");
+        adapter.add("Common/MatDefs/Misc/Unshaded.j3md", "FrameGraphCommon/MatDefs/GBuffer/Unshaded.fgmt");
+        adapter.add("Common/MatDefs/Terrain/Terrain.j3md", "FrameGraphCommon/MatDefs/GBuffer/Terrain.fgmt");
+        adapter.add("Common/MatDefs/Terrain/PBRTerrain.j3md", "FrameGraphCommon/MatDefs/GBuffer/PBRTerrain.fgmt");
+        adapter.add("Common/MatDefs/Terrain/AdvancedPBRTerrain.j3md", "FrameGraphCommon/MatDefs/GBuffer/AdvacedPBRTerrain.fgmt");
+        adapter.add("Common/MatDefs/Terrain/TerrainLighting.j3md", "FrameGraphCommon/MatDefs/GBuffer/TerrainLighting.fgmt");
     }
     
     private AssetManager assetManager;
