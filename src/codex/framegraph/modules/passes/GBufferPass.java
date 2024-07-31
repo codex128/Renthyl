@@ -36,6 +36,8 @@ import codex.framegraph.FrameGraph;
 import codex.framegraph.GeometryQueue;
 import codex.framegraph.ResourceTicket;
 import codex.framegraph.definitions.TextureDef;
+import codex.framegraph.material.MaterialAdapter;
+import com.jme3.asset.AssetManager;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
 import com.jme3.scene.Geometry;
@@ -64,8 +66,20 @@ import com.jme3.renderer.RenderManager;
  */
 public class GBufferPass extends RenderPass implements GeometryRenderHandler {
     
-    private final static String GBUFFER_PASS = "GBufferPass";
+    private static final String GBUFFER_PASS = "GBufferPass";
+    private static final MaterialAdapter adapter = new MaterialAdapter();
     
+    static {
+        adapter.add("Common/MatDefs/Light/PBRLighting.j3md", "FrameGraphCommon/Techniques/GBuffer/PBRLighting.fgmt");
+        adapter.add("Common/MatDefs/Light/Lighting.j3md", "FrameGraphCommon/Techniques/GBuffer/Lighting.fgmt");
+        adapter.add("Common/MatDefs/Misc/Unshaded.j3md", "FrameGraphCommon/Techniques/GBuffer/Unshaded.fgmt");
+        adapter.add("Common/MatDefs/Terrain/Terrain.j3md", "FrameGraphCommon/Techniques/GBuffer/Terrain.fgmt");
+        adapter.add("Common/MatDefs/Terrain/PBRTerrain.j3md", "FrameGraphCommon/Techniques/GBuffer/PBRTerrain.fgmt");
+        adapter.add("Common/MatDefs/Terrain/AdvancedPBRTerrain.j3md", "FrameGraphCommon/Techniques/GBuffer/AdvacedPBRTerrain.fgmt");
+        adapter.add("Common/MatDefs/Terrain/TerrainLighting.j3md", "FrameGraphCommon/Techniques/GBuffer/TerrainLighting.fgmt");
+    }
+    
+    private AssetManager assetManager;
     private ResourceTicket<GeometryQueue> geometry;
     private ResourceTicket<Texture2D>[] gbuffers;
     private ResourceTicket<Integer> numRendersTicket;
@@ -83,6 +97,7 @@ public class GBufferPass extends RenderPass implements GeometryRenderHandler {
         texDefs[2] = new TextureDef<>(Texture2D.class, tex, Image.Format.RGBA16F);
         texDefs[3] = new TextureDef<>(Texture2D.class, tex, Image.Format.RGBA32F);
         texDefs[4] = new TextureDef<>(Texture2D.class, tex, Image.Format.Depth);
+        this.assetManager = frameGraph.getAssetManager();
     }
     @Override
     protected void prepare(FGRenderContext context) {
@@ -98,19 +113,16 @@ public class GBufferPass extends RenderPass implements GeometryRenderHandler {
     }
     @Override
     protected void execute(FGRenderContext context) {
-        // acquire texture targets
         FrameBuffer fb = getFrameBuffer(context, 1);
         fb.setMultiTarget(true);
-        //resources.setPrimitive(diffuse, diffuseTex);
         resources.acquireColorTargets(fb, gbuffers[0], gbuffers[1], gbuffers[2], gbuffers[3]);
         resources.acquireDepthTarget(fb, gbuffers[4]);
         context.getRenderer().setFrameBuffer(fb);
         context.getRenderer().clearBuffers(true, true, true);
         context.getRenderer().setBackgroundColor(ColorRGBA.BlackNoAlpha);
-        context.getRenderManager().setForcedTechnique(GBUFFER_PASS);
         context.getRenderManager().setGeometryRenderHandler(this);
-        GeometryQueue bucket = resources.acquire(geometry);
-        context.renderGeometry(bucket, null, this);
+        GeometryQueue queue = resources.acquire(geometry);
+        context.renderGeometry(queue, null, this);
         resources.setPrimitive(numRendersTicket, numRenders);
     }
     @Override
@@ -120,12 +132,13 @@ public class GBufferPass extends RenderPass implements GeometryRenderHandler {
     @Override
     public boolean renderGeometry(RenderManager rm, Geometry geom) {
         Material material = geom.getMaterial();
-        if(material.getMaterialDef().getTechniqueDefs(rm.getForcedTechnique()) == null) {
+        if (!adapter.adaptMaterial(assetManager, material, GBUFFER_PASS)) {
             return false;
         }
-        rm.renderGeometry(geom);
+        material.selectTechnique(GBUFFER_PASS, rm);
+        material.render(geom, rm);
         numRenders++;
-        return false;
+        return true;
     }
     
 }

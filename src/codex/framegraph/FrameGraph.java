@@ -31,6 +31,7 @@
  */
 package codex.framegraph;
 
+import codex.framegraph.asset.FrameGraphKey;
 import codex.framegraph.client.GraphSetting;
 import codex.framegraph.debug.GraphEventCapture;
 import codex.framegraph.export.FrameGraphData;
@@ -40,7 +41,6 @@ import codex.framegraph.modules.RenderModule;
 import codex.framegraph.modules.RenderThread;
 import codex.framegraph.modules.ThreadLauncher;
 import com.jme3.asset.AssetManager;
-import com.jme3.asset.FrameGraphKey;
 import com.jme3.export.SavableObject;
 import com.jme3.opencl.CommandQueue;
 import com.jme3.opencl.Context;
@@ -136,7 +136,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
      * @param key 
      */
     public FrameGraph(AssetManager assetManager, FrameGraphKey key) {
-        this(assetManager, (FrameGraphData)assetManager.loadAsset(key));
+        this(assetManager, assetManager.loadAsset(key));
     }
     /**
      * Creates a new framegraph from data obtained by the given asset name.
@@ -145,7 +145,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
      * @param dataAsset 
      */
     public FrameGraph(AssetManager assetManager, String dataAsset) {
-        this(assetManager, (FrameGraphData)assetManager.loadAsset(new FrameGraphKey(dataAsset)));
+        this(assetManager, assetManager.loadAsset(new FrameGraphKey(dataAsset)));
     }
     
     @Override
