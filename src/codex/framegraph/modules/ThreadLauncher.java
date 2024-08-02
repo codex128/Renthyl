@@ -26,7 +26,7 @@ public class ThreadLauncher extends RenderContainer<RenderThread> {
     
     @Override
     public void prepareModuleRender(FGRenderContext context, PassIndex index) {
-        super.prepareModuleRender(context, index);
+        this.index.set(index);
         for (RenderThread t : queue) {
             t.prepareModuleRender(context, index);
             index.threadIndex++;

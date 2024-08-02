@@ -4,18 +4,14 @@
  */
 package codex.framegraph.material;
 
-import codex.framegraph.material.RawTechnique;
-import codex.framegraph.material.ShaderInfo;
 import com.jme3.asset.AssetInfo;
 import com.jme3.asset.AssetLoader;
 import com.jme3.material.TechniqueDef;
-import com.jme3.shader.Shader;
 import com.jme3.util.blockparser.BlockLanguageParser;
 import com.jme3.util.blockparser.Statement;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.LinkedList;
-import java.util.List;
 import jme3tools.shader.Preprocessor;
 
 /**

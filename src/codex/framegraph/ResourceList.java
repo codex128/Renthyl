@@ -58,7 +58,6 @@ public class ResourceList {
     public static final long WAIT_TIMEOUT = 5000;
     
     private final FrameGraph frameGraph;
-    private RenderManager renderManager;
     private RenderObjectMap map;
     private GraphEventCapture cap;
     private ArrayList<ResourceView> resources = new ArrayList<>(INITIAL_SIZE);
@@ -693,7 +692,7 @@ public class ResourceList {
     /**
      * Culls all resources and resource producers found to be unused.
      * <p>
-     * This should only be called after producers have fully counted their
+     * This should only be called after resource users have fully counted their
      * references, and prior to execution.
      */
     public void cullUnreferenced() {
@@ -709,9 +708,6 @@ public class ResourceList {
             ResourceUser producer = resource.getProducer();
             if (producer == null) {
                 remove(resource.getIndex());
-                continue;
-            }
-            if (!producer.isUsed()) {
                 continue;
             }
             producer.dereference();

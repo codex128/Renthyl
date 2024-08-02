@@ -57,7 +57,9 @@ public abstract class RenderModule implements Connectable, ResourceUser, Savable
     }
     @Override
     public void dereference() {
-        refs--;
+        if (--refs < 0) {
+            throw new IllegalStateException("Cannot dereference unreferenced module.");
+        }
     }
     @Override
     public boolean isUsed() {

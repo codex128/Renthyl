@@ -36,12 +36,16 @@ import codex.framegraph.client.GraphSetting;
 import codex.framegraph.debug.GraphEventCapture;
 import codex.framegraph.export.FrameGraphData;
 import codex.framegraph.export.ModuleGraphData;
+import codex.framegraph.material.TechniqueLoader;
 import codex.framegraph.modules.ModuleLocator;
 import codex.framegraph.modules.RenderModule;
+import codex.framegraph.modules.RenderPass;
 import codex.framegraph.modules.RenderThread;
 import codex.framegraph.modules.ThreadLauncher;
+import com.jme3.app.Application;
 import com.jme3.asset.AssetManager;
 import com.jme3.export.SavableObject;
+import com.jme3.export.binary.BinaryLoader;
 import com.jme3.opencl.CommandQueue;
 import com.jme3.opencl.Context;
 import com.jme3.profile.AppProfiler;
@@ -94,6 +98,7 @@ import java.util.logging.Logger;
 public class FrameGraph implements RenderPipeline<FGPipelineContext> {
     
     private static final Logger LOG = Logger.getLogger(FrameGraph.class.getName());
+    private static boolean initialized = false;
     
     private final AssetManager assetManager;
     private final ResourceList resources;
@@ -153,7 +158,11 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
         return rm.getOrCreateContext(FGPipelineContext.class, () -> new FGPipelineContext(rm));
     }
     @Override
-    public void startRenderFrame(RenderManager rm) {}
+    public void startRenderFrame(RenderManager rm) {
+        if (!initialized) {
+            throw new IllegalStateException("FrameGraph library has not been initialized.");
+        }
+    }
     @Override
     public void pipelineRender(RenderManager rm, FGPipelineContext pContext, ViewPort vp, float tpf) {
         
@@ -621,6 +630,20 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
      */
     public final int getNextId() {
         return nextModuleId++;
+    }
+    
+    public static void initialize(Application app) {
+        
+        if (initialized) {
+            throw new IllegalStateException("FrameGraph globals already initialized.");
+        }
+        
+        AssetManager assetManager = app.getAssetManager();
+        assetManager.registerLoader(BinaryLoader.class, "fg");
+        assetManager.registerLoader(TechniqueLoader.class, "fgmt");
+        
+        initialized = true;
+        
     }
     
 }
