@@ -80,7 +80,7 @@ public class HazePass extends RenderPass {
         result = addOutput("Result");
         texDef.setMagFilter(Texture.MagFilter.Bilinear);
         texDef.setMinFilter(Texture.MinFilter.BilinearNoMipMaps);
-        material = new Material(frameGraph.getAssetManager(), "Common/MatDefs/Post/Haze.j3md");
+        material = new Material(frameGraph.getAssetManager(), "FrameGraphCommon/MatDefs/Effects/Haze.j3md");
     }
     @Override
     protected void prepare(FGRenderContext context) {
