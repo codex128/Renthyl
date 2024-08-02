@@ -29,13 +29,13 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package codex.framegraph.effects;
+package codex.framegraph.modules.effects;
 
 import codex.framegraph.FGRenderContext;
 import codex.framegraph.FrameGraph;
 import codex.framegraph.ResourceTicket;
 import codex.framegraph.definitions.TextureDef;
-import codex.framegraph.modules.passes.RenderPass;
+import codex.framegraph.modules.RenderPass;
 import com.jme3.export.InputCapsule;
 import com.jme3.export.JmeExporter;
 import com.jme3.export.JmeImporter;

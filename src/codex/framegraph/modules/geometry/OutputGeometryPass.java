@@ -29,12 +29,13 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package codex.framegraph.modules.passes;
+package codex.framegraph.modules.geometry;
 
 import codex.framegraph.FGRenderContext;
 import codex.framegraph.FrameGraph;
 import codex.framegraph.GeometryQueue;
 import codex.framegraph.ResourceTicket;
+import codex.framegraph.modules.RenderPass;
 
 /**
  * Renders a queue bucket to the viewport's output framebuffer.

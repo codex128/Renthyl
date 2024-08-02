@@ -29,68 +29,75 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package codex.framegraph.modules.passes;
+package codex.framegraph.modules;
 
 import codex.framegraph.FGRenderContext;
 import codex.framegraph.FrameGraph;
 import codex.framegraph.ResourceTicket;
-import codex.framegraph.definitions.TextureDef;
-import com.jme3.material.Material;
-import com.jme3.texture.FrameBuffer;
-import com.jme3.texture.Image;
+import com.jme3.export.InputCapsule;
+import com.jme3.export.JmeExporter;
+import com.jme3.export.JmeImporter;
+import com.jme3.export.OutputCapsule;
 import com.jme3.texture.Texture2D;
+import java.io.IOException;
 
 /**
+ * Renders a set of color and depth textures on a fullscreen quad to the
+ * viewport's output framebuffer.
  * 
  * @author codex
  */
-public class BlitPass extends RenderPass {
-
-    private ResourceTicket<FrameBuffer> source;
+public class OutputPass extends RenderPass {
+    
     private ResourceTicket<Texture2D> color, depth;
-    private final TextureDef<Texture2D> colorDef = TextureDef.texture2D();
-    private final TextureDef<Texture2D> depthDef = TextureDef.texture2D();
-    private Material nullMat;
+    private Float alphaDiscard;
+
+    public OutputPass() {
+        this(null);
+    }
+    public OutputPass(Float alphaDiscard) {
+        this.alphaDiscard = alphaDiscard;
+    }
     
     @Override
     protected void initialize(FrameGraph frameGraph) {
-        source = addInput("Source");
-        color = addOutput("Color");
-        depth = addOutput("Depth");
-        colorDef.setFormatFlexible(true);
-        depthDef.setFormat(Image.Format.Depth);
-        depthDef.setFormatFlexible(true);
-        nullMat = new Material(frameGraph.getAssetManager(), "Common/MatDefs/Misc/Null.j3md");
+        color = addInput("Color");
+        depth = addInput("Depth");
     }
     @Override
     protected void prepare(FGRenderContext context) {
-        declare(colorDef, color);
-        declare(depthDef, depth);
-        reserve(color, depth);
-        referenceOptional(source);
+        referenceOptional(color, depth);
     }
     @Override
     protected void execute(FGRenderContext context) {
-        FrameBuffer sourceBuf = resources.acquireOrElse(source, null);
-        FrameBuffer targetBuf;
-        if (sourceBuf != null) {
-            targetBuf = getFrameBuffer(sourceBuf.getWidth(), sourceBuf.getHeight(), sourceBuf.getSamples());
-            colorDef.setSize(sourceBuf.getWidth(), sourceBuf.getHeight());
-            depthDef.setSize(sourceBuf.getWidth(), sourceBuf.getHeight());
-        } else {
-            targetBuf = getFrameBuffer(context, 1);
-            colorDef.setSize(context.getWidth(), context.getHeight());
-            depthDef.setSize(context.getWidth(), context.getHeight());
+        context.popFrameBuffer();
+        Texture2D colorTex = resources.acquireOrElse(color, null);
+        Texture2D depthTex = resources.acquireOrElse(depth, null);
+        if (alphaDiscard != null) {
+            context.getScreen().setAlphaDiscard(alphaDiscard);
         }
-        context.getRenderer().copyFrameBuffer(sourceBuf, targetBuf, true, true);
-        resources.acquireColorTarget(targetBuf, color);
-        resources.acquireDepthTarget(targetBuf, depth);
-        context.getRenderer().setFrameBuffer(targetBuf);
-        context.renderFullscreen(nullMat);
+        //System.out.println("camera: "+context.getWidth()+" "+context.getHeight());
+        //System.out.println("texture: "+colorTex.getImage().getWidth()+" "+colorTex.getImage().getHeight());
+        //context.resizeCamera(context.getWidth(), context.getHeight(), true, false, true);
+        context.renderTextures(colorTex, depthTex);
     }
     @Override
     protected void reset(FGRenderContext context) {}
     @Override
     protected void cleanup(FrameGraph frameGraph) {}
+    @Override
+    public boolean isUsed() {
+        return color.hasSource() || depth.hasSource();
+    }
+    @Override
+    public void write(JmeExporter ex) throws IOException {
+        OutputCapsule out = ex.getCapsule(this);
+        out.write(alphaDiscard, "AlphaDiscard", -1);
+    }
+    @Override
+    public void read(JmeImporter im) throws IOException {
+        InputCapsule in = im.getCapsule(this);
+        alphaDiscard = in.readFloat("AlphaDiscard", -1);
+    }
     
 }

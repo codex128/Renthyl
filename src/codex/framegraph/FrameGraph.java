@@ -47,7 +47,7 @@ import com.jme3.opencl.Context;
 import com.jme3.profile.AppProfiler;
 import com.jme3.profile.VpStep;
 import com.jme3.renderer.RenderManager;
-import com.jme3.renderer.RenderPipeline;
+import com.jme3.renderer.pipeline.RenderPipeline;
 import com.jme3.renderer.ViewPort;
 import java.util.HashMap;
 import java.util.function.Function;
@@ -153,7 +153,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
         return rm.getOrCreateContext(FGPipelineContext.class, () -> new FGPipelineContext(rm));
     }
     @Override
-    public void beginRenderFrame(RenderManager rm) {}
+    public void startRenderFrame(RenderManager rm) {}
     @Override
     public void pipelineRender(RenderManager rm, FGPipelineContext pContext, ViewPort vp, float tpf) {
         

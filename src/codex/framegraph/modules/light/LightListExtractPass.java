@@ -29,75 +29,77 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package codex.framegraph.modules.passes;
+package codex.framegraph.modules.light;
 
 import codex.framegraph.FGRenderContext;
 import codex.framegraph.FrameGraph;
 import codex.framegraph.ResourceTicket;
-import com.jme3.export.InputCapsule;
-import com.jme3.export.JmeExporter;
-import com.jme3.export.JmeImporter;
-import com.jme3.export.OutputCapsule;
-import com.jme3.texture.Texture2D;
-import java.io.IOException;
+import codex.framegraph.modules.RenderPass;
+import com.jme3.light.Light;
+import com.jme3.light.LightList;
+import com.jme3.light.LightProbe;
+import com.jme3.math.ColorRGBA;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
- * Renders a set of color and depth textures on a fullscreen quad to the
- * viewport's output framebuffer.
+ * Extracts ambient light and light probes from a LightList.
  * 
  * @author codex
  */
-public class OutputPass extends RenderPass {
-    
-    private ResourceTicket<Texture2D> color, depth;
-    private Float alphaDiscard;
+public class LightListExtractPass extends RenderPass {
 
-    public OutputPass() {
-        this(null);
-    }
-    public OutputPass(Float alphaDiscard) {
-        this.alphaDiscard = alphaDiscard;
-    }
+    private ResourceTicket<LightList> inLights, outLights;
+    private ResourceTicket<ColorRGBA> ambient;
+    private ResourceTicket<List<LightProbe>> probes;
+    private final LightList outLightList = new LightList(null);
+    private final ColorRGBA ambColor = new ColorRGBA(0, 0, 0, 1);
+    private final List<LightProbe> probeList = new LinkedList<>();
     
     @Override
     protected void initialize(FrameGraph frameGraph) {
-        color = addInput("Color");
-        depth = addInput("Depth");
+        inLights = addInput("Lights");
+        outLights = addOutput("Lights");
+        ambient = addOutput("Ambient");
+        probes = addOutput("Probes");
     }
     @Override
     protected void prepare(FGRenderContext context) {
-        referenceOptional(color, depth);
+        referenceOptional(inLights);
+        declare(null, outLights);
+        declare(null, ambient);
+        declare(null, probes);
     }
     @Override
     protected void execute(FGRenderContext context) {
-        context.popFrameBuffer();
-        Texture2D colorTex = resources.acquireOrElse(color, null);
-        Texture2D depthTex = resources.acquireOrElse(depth, null);
-        if (alphaDiscard != null) {
-            context.getScreen().setAlphaDiscard(alphaDiscard);
+        LightList list = resources.acquireOrElse(inLights, null);
+        if (list != null) {
+            ambColor.set(0, 0, 0, 1);
+            for (Light l : list) switch (l.getType()) {
+                case Ambient:
+                    ambColor.addLocal(l.getColor());
+                    break;
+                case Probe:
+                    probeList.add((LightProbe)l);
+                    break;
+                default:
+                    outLightList.add(l);
+            }
+            resources.setPrimitive(outLights, outLightList);
+            resources.setPrimitive(ambient, ambColor);
+            resources.setPrimitive(probes, probeList);
+        } else {
+            resources.setUndefined(outLights);
+            resources.setUndefined(ambient);
+            resources.setUndefined(probes);
         }
-        //System.out.println("camera: "+context.getWidth()+" "+context.getHeight());
-        //System.out.println("texture: "+colorTex.getImage().getWidth()+" "+colorTex.getImage().getHeight());
-        //context.resizeCamera(context.getWidth(), context.getHeight(), true, false, true);
-        context.renderTextures(colorTex, depthTex);
     }
     @Override
-    protected void reset(FGRenderContext context) {}
+    protected void reset(FGRenderContext context) {
+        outLightList.clear();
+        probeList.clear();
+    }
     @Override
     protected void cleanup(FrameGraph frameGraph) {}
-    @Override
-    public boolean isUsed() {
-        return color.hasSource() || depth.hasSource();
-    }
-    @Override
-    public void write(JmeExporter ex) throws IOException {
-        OutputCapsule out = ex.getCapsule(this);
-        out.write(alphaDiscard, "AlphaDiscard", -1);
-    }
-    @Override
-    public void read(JmeImporter im) throws IOException {
-        InputCapsule in = im.getCapsule(this);
-        alphaDiscard = in.readFloat("AlphaDiscard", -1);
-    }
     
 }

@@ -29,7 +29,7 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package codex.framegraph.modules.passes;
+package codex.framegraph.modules.deferred;
 
 import codex.framegraph.FGRenderContext;
 import codex.framegraph.FrameGraph;
@@ -37,6 +37,7 @@ import codex.framegraph.GeometryQueue;
 import codex.framegraph.ResourceTicket;
 import codex.framegraph.definitions.TextureDef;
 import codex.framegraph.material.MaterialAdapter;
+import codex.framegraph.modules.RenderPass;
 import com.jme3.asset.AssetManager;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;

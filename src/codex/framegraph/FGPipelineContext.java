@@ -5,7 +5,7 @@
 package codex.framegraph;
 
 import codex.framegraph.debug.GraphEventCapture;
-import com.jme3.renderer.AbstractPipelineContext;
+import com.jme3.renderer.pipeline.AbstractPipelineContext;
 import com.jme3.renderer.RenderManager;
 import java.io.IOException;
 import java.util.logging.Level;
@@ -28,7 +28,7 @@ public class FGPipelineContext extends AbstractPipelineContext {
     }
 
     @Override
-    public void beginRenderFrame(RenderManager rm) {
+    public void startRenderFrame(RenderManager rm) {
         if (eventCapture != null) {
             eventCapture.beginRenderFrame();
         }

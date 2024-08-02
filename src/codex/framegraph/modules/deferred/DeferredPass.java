@@ -29,12 +29,13 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package codex.framegraph.modules.passes;
+package codex.framegraph.modules.deferred;
 
 import codex.framegraph.FGRenderContext;
 import codex.framegraph.FrameGraph;
 import codex.framegraph.ResourceTicket;
 import codex.framegraph.definitions.TextureDef;
+import codex.framegraph.modules.RenderPass;
 import codex.framegraph.util.ProbeRenderUtils;
 import com.jme3.asset.AssetManager;
 import com.jme3.export.InputCapsule;
@@ -150,7 +151,7 @@ public class DeferredPass extends RenderPass implements TechniqueDefLogic {
         colorDef = new TextureDef<>(Texture2D.class, img -> new Texture2D(img));
         colorDef.setFormatFlexible(true);
         assetManager = frameGraph.getAssetManager();
-        material = new Material(assetManager, "Common/MatDefs/ShadingCommon/DeferredShading.j3md");
+        material = new Material(assetManager, "FrameGraphCommon/MatDefs/Deferred/DeferredShading.j3md");
         for (TechniqueDef t : material.getMaterialDef().getTechniqueDefs("DeferredPass")) {
             Defines.config(t);
         }

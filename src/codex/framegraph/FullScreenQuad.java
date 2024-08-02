@@ -79,7 +79,7 @@ public class FullScreenQuad {
         mesh.updateCounts();
         mesh.setStatic();
         geometry = new Geometry("Screen", mesh);
-        transferMat = new Material(assetManager, "Common/MatDefs/ShadingCommon/TextureTransfer.j3md");
+        transferMat = new Material(assetManager, "FrameGraphCommon/MatDefs/Fullscreen/TextureTransfer.j3md");
     }
     
     /**
