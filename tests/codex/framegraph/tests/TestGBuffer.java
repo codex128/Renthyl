@@ -6,6 +6,7 @@ package codex.framegraph.tests;
 
 import codex.framegraph.FrameGraph;
 import codex.framegraph.FrameGraphFactory;
+import codex.framegraph.modules.deferred.GBufferPass;
 import com.jme3.input.KeyInput;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
@@ -29,6 +30,8 @@ public class TestGBuffer extends TestApplication {
         FrameGraph fg = FrameGraphFactory.Test.testGBuffer(assetManager);
         fg.setSetting("GBuffer", 0);
         viewPort.setPipeline(fg);
+        
+        GBufferPass.adaptAllMaterials(assetManager);
         
         setupAll();
         

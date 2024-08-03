@@ -33,7 +33,6 @@ package codex.framegraph;
 
 import codex.framegraph.debug.GraphEventCapture;
 import codex.framegraph.definitions.ResourceDef;
-import com.jme3.renderer.RenderManager;
 import com.jme3.texture.FrameBuffer;
 import com.jme3.texture.Texture;
 import java.util.ArrayList;
@@ -196,7 +195,7 @@ public class ResourceList {
      * @param passIndex
      * @param ticket 
      */
-    public void reserve(PassIndex passIndex, ResourceTicket ticket) {
+    public void reserve(ModuleIndex passIndex, ResourceTicket ticket) {
         if (ticket.getObjectId() >= 0) {
             map.reserve(ticket.getObjectId(), passIndex);
             ticket.copyObjectTo(locate(ticket).getTicket());
@@ -210,13 +209,13 @@ public class ResourceList {
      * @param tickets 
      * @see RenderObjectMap#reserve(long, com.jme3.renderer.framegraph.PassIndex)
      */
-    public void reserve(PassIndex passIndex, ResourceTicket... tickets) {
+    public void reserve(ModuleIndex passIndex, ResourceTicket... tickets) {
         for (ResourceTicket t : tickets) {
             reserve(passIndex, t);
         }
     }
     
-    private void reference(PassIndex index, ResourceTicket ticket, boolean optional) {
+    private void reference(ModuleIndex index, ResourceTicket ticket, boolean optional) {
         boolean sync = !frameGraph.isAsync();
         if (optional && sync && !ResourceTicket.validate(ticket)) {
             return;
@@ -241,7 +240,7 @@ public class ResourceList {
      * @param passIndex render pass index
      * @param ticket 
      */
-    public void reference(PassIndex passIndex, ResourceTicket ticket) {
+    public void reference(ModuleIndex passIndex, ResourceTicket ticket) {
         reference(passIndex, ticket, false);
     }
     
@@ -252,7 +251,7 @@ public class ResourceList {
      * @param passIndex render pass index
      * @param ticket
      */
-    public void referenceOptional(PassIndex passIndex, ResourceTicket ticket) {
+    public void referenceOptional(ModuleIndex passIndex, ResourceTicket ticket) {
         reference(passIndex, ticket, true);
     }
     
@@ -262,7 +261,7 @@ public class ResourceList {
      * @param passIndex render pass index
      * @param tickets 
      */
-    public void reference(PassIndex passIndex, ResourceTicket... tickets) {
+    public void reference(ModuleIndex passIndex, ResourceTicket... tickets) {
         for (ResourceTicket t : tickets) {
             reference(passIndex, t, false);
         }
@@ -274,7 +273,7 @@ public class ResourceList {
      * @param passIndex render pass index
      * @param tickets 
      */
-    public void referenceOptional(PassIndex passIndex, ResourceTicket... tickets) {
+    public void referenceOptional(ModuleIndex passIndex, ResourceTicket... tickets) {
         for (ResourceTicket t : tickets) {
             reference(passIndex, t, true);
         }
@@ -760,11 +759,11 @@ public class ResourceList {
      */
     private static class FutureReference {
         
-        public final PassIndex index;
+        public final ModuleIndex index;
         public final ResourceTicket ticket;
         public final boolean optional;
 
-        public FutureReference(PassIndex index, ResourceTicket ticket, boolean optional) {
+        public FutureReference(ModuleIndex index, ResourceTicket ticket, boolean optional) {
             this.index = index;
             this.ticket = ticket;
             this.optional = optional;

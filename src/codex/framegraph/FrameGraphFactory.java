@@ -104,7 +104,7 @@ public class FrameGraphFactory {
         FrameGraph fg = new FrameGraph(assetManager);
         fg.setName(tiled ? "TiledDeferred" : "Deferred");
         
-        int asyncThread = async ? 1 : PassIndex.MAIN_THREAD;
+        int asyncThread = async ? 1 : ModuleIndex.MAIN_THREAD;
         
         SceneEnqueuePass enqueue = fg.add(new SceneEnqueuePass(true, true));
         Attribute tileInfoAttr = fg.add(new Attribute());
@@ -112,12 +112,12 @@ public class FrameGraphFactory {
         GBufferPass gbuf = fg.add(new GBufferPass());
         Junction gbufDebugTarget = fg.add(new Junction(5, 1));
         Attribute gbufDebug = fg.add(new Attribute());
-        LightImagePass lightImg = fg.add(new LightImagePass(), new PassIndex(asyncThread, -1));
+        LightImagePass lightImg = fg.add(new LightImagePass(), new ModuleIndex(asyncThread, -1));
         Junction lightJunct = fg.add(new Junction(1, 6));
         Junction tileJunct2 = fg.add(new Junction(1, 2));
         DeferredPass deferred = fg.add(new DeferredPass());
         OutputPass defOut = fg.add(new OutputPass(0f));
-        QueueMergePass merge = fg.add(new QueueMergePass(4), new PassIndex(asyncThread, -1));
+        QueueMergePass merge = fg.add(new QueueMergePass(4), new ModuleIndex(asyncThread, -1));
         OutputGeometryPass geometry = fg.add(new OutputGeometryPass());
         
         gbuf.makeInput(enqueue, "Opaque", "Geometry");
@@ -129,7 +129,6 @@ public class FrameGraphFactory {
         gbufDebug.makeInput(gbufDebugTarget, Junction.getOutput(), Attribute.INPUT);
         
         GraphSetting<TiledRenderGrid> tileInfo = new GraphSetting<>("TileInfo", new TiledRenderGrid());
-        tileInfoAttr.setName("TileInfo");
         tileInfoAttr.setSource(tileInfo);
         
         GraphSetting<Integer> tileToggle = fg.setSetting("UseLightTiling", tiled ? 0 : -1, -1);
@@ -140,7 +139,6 @@ public class FrameGraphFactory {
         lightImg.makeInput(tileJunct1, Junction.getOutput(), "TileInfo");
         
         GraphSetting<Integer> lightPackMethod = fg.setSetting("UseLightTextures", tiled ? 0 : -1, -1);
-        lightJunct.setName("LightPackMethod");
         lightJunct.makeGroupInput(lightImg, "Textures", Junction.getInput(0), 0, 0, 3);
         lightJunct.makeInput(lightImg, "NumLights", Junction.getInput(0, 3));
         lightJunct.makeInput(lightImg, "Ambient", Junction.getInput(0, 4));

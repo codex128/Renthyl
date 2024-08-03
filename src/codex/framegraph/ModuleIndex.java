@@ -41,7 +41,7 @@ package codex.framegraph;
  * 
  * @author codex
  */
-public final class PassIndex {
+public final class ModuleIndex {
     
     /**
      * Index of the main render thread.
@@ -51,7 +51,7 @@ public final class PassIndex {
     /**
      * Index that conforms to defaults only.
      */
-    public static final PassIndex DEFAULT = new PassIndex();
+    public static final ModuleIndex DEFAULT = new ModuleIndex();
     
     /**
      * Index of the thread the pass is executed on.
@@ -65,14 +65,14 @@ public final class PassIndex {
     /**
      * Creates a pass index with all defaults (negative indices).
      */
-    public PassIndex() {
+    public ModuleIndex() {
         this(MAIN_THREAD, -1);
     }
     /**
      * 
      * @param queueIndex 
      */
-    public PassIndex(int queueIndex) {
+    public ModuleIndex(int queueIndex) {
         this(MAIN_THREAD, queueIndex);
     }
     /**
@@ -80,7 +80,7 @@ public final class PassIndex {
      * @param threadIndex
      * @param queueIndex 
      */
-    public PassIndex(int threadIndex, int queueIndex) {
+    public ModuleIndex(int threadIndex, int queueIndex) {
         this.threadIndex = threadIndex;
         this.queueIndex = queueIndex;
     }
@@ -88,7 +88,7 @@ public final class PassIndex {
      * 
      * @param index 
      */
-    public PassIndex(PassIndex index) {
+    public ModuleIndex(ModuleIndex index) {
         this(index.threadIndex, index.queueIndex);
     }
     
@@ -97,7 +97,7 @@ public final class PassIndex {
      * @param index index to set to (not null)
      * @return this
      */
-    public PassIndex set(PassIndex index) {
+    public ModuleIndex set(ModuleIndex index) {
         threadIndex = index.threadIndex;
         queueIndex = index.queueIndex;
         return this;
@@ -108,7 +108,7 @@ public final class PassIndex {
      * @param queueIndex
      * @return this
      */
-    public PassIndex set(int threadIndex, int queueIndex) {
+    public ModuleIndex set(int threadIndex, int queueIndex) {
         this.threadIndex = threadIndex;
         this.queueIndex = queueIndex;
         return this;
@@ -118,7 +118,7 @@ public final class PassIndex {
      * @param threadIndex
      * @return this
      */
-    public PassIndex setThreadIndex(int threadIndex) {
+    public ModuleIndex setThreadIndex(int threadIndex) {
         this.threadIndex = threadIndex;
         return this;
     }
@@ -127,38 +127,9 @@ public final class PassIndex {
      * @param queueIndex
      * @return this
      */
-    public PassIndex setQueueIndex(int queueIndex) {
+    public ModuleIndex setQueueIndex(int queueIndex) {
         this.queueIndex = queueIndex;
         return this;
-    }
-    
-    /**
-     * Shifts the thread index up or down one if the thread index is greater
-     * than the given index.
-     * 
-     * @param i
-     * @param pos
-     * @return new thread index
-     */
-    public int shiftThread(int i, boolean pos) {
-        if (threadIndex > i) {
-            threadIndex += pos ? 1 : -1;
-        }
-        return threadIndex;
-    }
-    /**
-     * Shifts the queue index up or down one if the thread index is greater than
-     * the given index.
-     * 
-     * @param i
-     * @param pos
-     * @return new queue index
-     */
-    public int shiftQueue(int i, boolean pos) {
-        if (queueIndex > i) {
-            queueIndex += pos ? 1 : -1;
-        }
-        return queueIndex;
     }
     
     /**
@@ -225,7 +196,7 @@ public final class PassIndex {
         if (getClass() != obj.getClass()) {
             return false;
         }
-        final PassIndex other = (PassIndex) obj;
+        final ModuleIndex other = (ModuleIndex) obj;
         if (this.threadIndex != other.threadIndex) {
             return false;
         }
@@ -233,11 +204,11 @@ public final class PassIndex {
     }
     @Override
     public String toString() {
-        return PassIndex.class.getSimpleName()+"[thread="+threadIndex+", queue="+queueIndex+']';
+        return ModuleIndex.class.getSimpleName()+"[thread="+threadIndex+", queue="+queueIndex+']';
     }
     @Override
-    public PassIndex clone() {
-        return new PassIndex(threadIndex, queueIndex);
+    public ModuleIndex clone() {
+        return new ModuleIndex(threadIndex, queueIndex);
     }
     
 }

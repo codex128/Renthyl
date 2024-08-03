@@ -10,18 +10,22 @@ Technique GBufferPass {
     }
 
     Defines {
+        
         BOUND_DRAW_BUFFER: BoundDrawBuffer
+        TRI_PLANAR_MAPPING : useTriPlanarMapping
+    
+        //BOUND_DRAW_BUFFER: BoundDrawBuffer
         //INSTANCING : UseInstancing
         //SEPARATE_TEXCOORD : SeparateTexCoord
-        HAS_COLORMAP : ColorMap
-        HAS_LIGHTMAP : LightMap
-        HAS_VERTEXCOLOR : VertexColor
-        HAS_POINTSIZE : PointSize
-        HAS_COLOR : Color
-        NUM_BONES : NumberOfBones
-        DISCARD_ALPHA : AlphaDiscardThreshold
-        NUM_MORPH_TARGETS: NumberOfMorphTargets
-        NUM_TARGETS_BUFFERS: NumberOfTargetsBuffers
-        DESATURATION : DesaturationValue
+        //HAS_COLORMAP : ColorMap
+        //HAS_LIGHTMAP : LightMap
+        //HAS_VERTEXCOLOR : VertexColor
+        //HAS_POINTSIZE : PointSize
+        //HAS_COLOR : Color
+        //NUM_BONES : NumberOfBones
+        //DISCARD_ALPHA : AlphaDiscardThreshold
+        //NUM_MORPH_TARGETS: NumberOfMorphTargets
+        //NUM_TARGETS_BUFFERS: NumberOfTargetsBuffers
+        //DESATURATION : DesaturationValue
     }
 }

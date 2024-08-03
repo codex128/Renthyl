@@ -76,7 +76,7 @@ public class ResourceView <T> {
      * 
      * @param index 
      */
-    public void reference(PassIndex index) {
+    public void reference(ModuleIndex index) {
         lifetime.extendTo(index);
         refs++;
     }

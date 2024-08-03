@@ -31,7 +31,7 @@
  */
 package codex.framegraph.debug;
 
-import codex.framegraph.PassIndex;
+import codex.framegraph.ModuleIndex;
 import com.jme3.renderer.Camera;
 import com.jme3.renderer.ViewPort;
 import com.jme3.texture.FrameBuffer;
@@ -117,7 +117,7 @@ public class GraphEventCapture {
      * @param index
      * @param name 
      */
-    public void prepareRenderPass(PassIndex index, String name) {
+    public void prepareRenderPass(ModuleIndex index, String name) {
         events.add(new Event("PrepareRenderPass", index.clone(), name));
     }
     /**
@@ -126,7 +126,7 @@ public class GraphEventCapture {
      * @param index
      * @param name 
      */
-    public void executeRenderPass(PassIndex index, String name) {
+    public void executeRenderPass(ModuleIndex index, String name) {
         add(new Event("ExecuteRenderPass", index.clone(), name));
     }
     /**
@@ -207,7 +207,7 @@ public class GraphEventCapture {
      * @param id
      * @param index 
      */
-    public void reserveObject(long id, PassIndex index) {
+    public void reserveObject(long id, ModuleIndex index) {
         add(new Event("ReserveObject", id, index.clone()));
     }
     /**

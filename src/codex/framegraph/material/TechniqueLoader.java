@@ -43,7 +43,7 @@ public class TechniqueLoader implements AssetLoader {
             throw new IOException("File must start by declaring a technique.");
         }
         int length = "Technique".length() + 1;
-        if (name.length() > length) {
+        if (name.length() >= length) {
             name = name.substring(length).trim();
         } else {
             name = TechniqueDef.DEFAULT_TECHNIQUE_NAME;

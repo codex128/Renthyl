@@ -75,7 +75,6 @@ public class FGRenderContext {
     private RenderManager renderManager;
     private FGPipelineContext context;
     private ViewPort viewPort;
-    private AppProfiler profiler;
     private float tpf;
     private final FullScreenQuad screen;
     private Context clContext;
@@ -107,11 +106,10 @@ public class FGRenderContext {
      * @param profiler
      * @param tpf 
      */
-    public void target(RenderManager rm, FGPipelineContext context, ViewPort vp, AppProfiler profiler, float tpf) {
+    public void target(RenderManager rm, FGPipelineContext context, ViewPort vp, float tpf) {
         this.renderManager = rm;
         this.context = context;
         this.viewPort = vp;
-        this.profiler = profiler;
         this.tpf = tpf;
         if (viewPort == null) {
             throw new NullPointerException("ViewPort cannot be null.");
@@ -275,7 +273,7 @@ public class FGRenderContext {
      * @return app profiler, or null
      */
     public AppProfiler getProfiler() {
-        return profiler;
+        return renderManager.getProfiler();
     }
     /**
      * Gets the renderer held by the render manager.
@@ -368,7 +366,7 @@ public class FGRenderContext {
      * @return 
      */
     public boolean isProfilerAvailable() {
-        return profiler != null;
+        return renderManager.getProfiler() != null;
     }
     /**
      * Returns true if a debug frame snapshot is assigned.

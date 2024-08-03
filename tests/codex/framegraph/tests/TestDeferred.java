@@ -40,10 +40,8 @@ public class TestDeferred extends TestApplication implements ActionListener {
     public void testInitApp() {
         
         FrameGraph.initialize(this);
-        //GBufferPass.adaptAllMaterials(assetManager);
         
-        fg = FrameGraphFactory.deferred(assetManager, false);
-        //fg = FrameGraphFactory.forward(assetManager);
+        fg = FrameGraphFactory.deferred(assetManager, false, false);
         viewPort.setPipeline(fg);
         
         setupAll();
@@ -53,14 +51,6 @@ public class TestDeferred extends TestApplication implements ActionListener {
         Spatial tank = loadTank();
         tank.setLocalTranslation(20, 0, 0);
         tank.setQueueBucket(RenderQueue.Bucket.Transparent);
-        
-        Geometry cube = new Geometry("Cube", new Box(5, 5, 5));
-        cube.setLocalTranslation(-20, 0, 0);
-        Material cubeMat = new Material(assetManager, "FrameGraphCommon/MatDefs/Test/PBRLighting.j3md");
-        cubeMat.setColor("BaseColor", ColorRGBA.Blue);
-        cubeMat.setFloat("Metallic", .5f);
-        cube.setMaterial(cubeMat);
-        rootNode.attachChild(cube);
         
         int viewerSize = 200;
         Geometry viewer = loadTextureViewer(windowSize.x-viewerSize, 0, viewerSize, viewerSize);

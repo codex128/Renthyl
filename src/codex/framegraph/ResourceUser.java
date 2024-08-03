@@ -17,7 +17,7 @@ public interface ResourceUser {
     
     public LinkedList<ResourceTicket> getOutputTickets();
     
-    public PassIndex getIndex();
+    public ModuleIndex getIndex();
     
     public void countReferences();
     

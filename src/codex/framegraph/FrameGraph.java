@@ -38,22 +38,22 @@ import codex.framegraph.export.FrameGraphData;
 import codex.framegraph.export.ModuleGraphData;
 import codex.framegraph.material.TechniqueLoader;
 import codex.framegraph.modules.ModuleLocator;
+import codex.framegraph.modules.RenderContainer;
 import codex.framegraph.modules.RenderModule;
 import codex.framegraph.modules.RenderPass;
 import codex.framegraph.modules.RenderThread;
-import codex.framegraph.modules.ThreadLauncher;
 import com.jme3.app.Application;
 import com.jme3.asset.AssetManager;
 import com.jme3.export.SavableObject;
 import com.jme3.export.binary.BinaryLoader;
 import com.jme3.opencl.CommandQueue;
 import com.jme3.opencl.Context;
-import com.jme3.profile.AppProfiler;
-import com.jme3.profile.VpStep;
 import com.jme3.renderer.RenderManager;
+import com.jme3.renderer.RendererException;
 import com.jme3.renderer.pipeline.RenderPipeline;
 import com.jme3.renderer.ViewPort;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.function.Function;
 import java.util.logging.Logger;
 
@@ -98,19 +98,23 @@ import java.util.logging.Logger;
 public class FrameGraph implements RenderPipeline<FGPipelineContext> {
     
     private static final Logger LOG = Logger.getLogger(FrameGraph.class.getName());
+    private static final long THREAD_WAIT_TIMEOUT = 5000;
     private static boolean initialized = false;
     
     private final AssetManager assetManager;
     private final ResourceList resources;
     private final FGRenderContext context;
     private final HashMap<String, Object> settings = new HashMap<>();
-    private ThreadLauncher launcher = new ThreadLauncher();
+    private final IndexSupplier index = new IndexSupplier();
+    private final LinkedList<RenderThread> threadExecutionStack = new LinkedList<>();
+    private RenderContainer root;
     private String name = "FrameGraph";
     private String docAsset = null;
     private boolean rendered = false;
     private boolean debugPrint = false;
     private boolean interrupted = false;
     private int nextModuleId = 0;
+    private int activeThreads = 0;
     
     /**
      * Creates a new blank framegraph.
@@ -121,8 +125,6 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
         this.assetManager = assetManager;
         this.resources = new ResourceList(this);
         this.context = new FGRenderContext(this);
-        launcher.initializeModule(this);
-        launcher.getOrCreate(PassIndex.MAIN_THREAD);
     }
     /**
      * Creates a new framegraph from the given data.
@@ -170,49 +172,46 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
             throw new IllegalStateException("Cannot render because FrameGraph crashed.");
         }
         
-        AppProfiler prof = rm.getProfiler();
-        if (prof != null) {
-            prof.vpStep(VpStep.BeginRender, vp, null);
-        }
-        
         // prepare
         rm.applyViewPort(vp);
-        context.target(rm, pContext, vp, prof, tpf);
+        context.target(rm, pContext, vp, tpf);
         GraphEventCapture cap = context.getGraphCapture();
         if (cap != null) {
             cap.renderViewPort(context.getViewPort());
         }
         if (!rendered) {
-            resources.beginRenderFrame(
-                    pContext.getRenderObjects(), pContext.getEventCapture());
+            resources.beginRenderFrame(pContext.getRenderObjects(), pContext.getEventCapture());
         }
-        launcher.prepareModuleRender(context, new PassIndex(0, 0));
+        index.reset();
+        root.updateModuleIndex(index);
+        root.prepareModuleRender(context);
         resources.applyFutureReferences();
+        activeThreads = threadExecutionStack.size() + 1;
         
         // cull modules and resources
-        launcher.countReferences();
+        root.countReferences();
         resources.cullUnreferenced();
         
         // execute
         context.pushRenderSettings();
-        // execute threads in reverse order so that the 0th thread is executed
-        // last on JME's main thread.
-        launcher.executeModuleRender(context);
-        if (interrupted) {
-            throw new RuntimeException("FrameGraph execution was interrupted.");
+        for (RenderThread t : threadExecutionStack) {
+            t.startThreadExecution(context);
         }
-        context.popFrameBuffer();
+        root.executeModuleRender(context);
+        waitForActiveThreads(THREAD_WAIT_TIMEOUT);
+        if (interrupted) {
+            throw new RendererException("FrameGraph execution was interrupted.");
+        }
         
         // reset
-        launcher.resetRender(context);
+        threadExecutionStack.clear();
+        context.popFrameBuffer();
+        root.resetModuleRender(context);
         pContext.getRenderObjects().clearReservations();
         resources.clear();
         rm.getRenderer().clearClipRect();
-        rendered = true;
         
-        if (prof != null) {
-            prof.vpStep(VpStep.EndRender, vp, null);
-        }
+        rendered = true;
         
     }
     @Override
@@ -221,12 +220,23 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
     }
     @Override
     public void endRenderFrame(RenderManager rm) {
-        launcher.renderingComplete();
+        root.renderingComplete();
         rendered = false;
     }
     @Override
     public String toString() {
         return "FrameGraph ("+name+")";
+    }
+    
+    private void waitForActiveThreads(long timeout) {
+        if (activeThreads > 0) {
+            long start = System.currentTimeMillis();
+            while (activeThreads > 0) {
+                if (System.currentTimeMillis()-start > timeout) {
+                    throw new RendererException("Timed out waiting for "+activeThreads+" threads to complete.");
+                }
+            }
+        }
     }
     
     /**
@@ -237,7 +247,8 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
      * @return given pass
      */
     public <T extends RenderModule> T add(T module) {
-        return launcher.getOrCreate(PassIndex.MAIN_THREAD).add(module);
+        root.add(module);
+        return module;
     }
     /**
      * Adds the pass at the index.
@@ -250,12 +261,13 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
      * will have their indexes shifted.
      * 
      * @param <T>
-     * @param pass
+     * @param module
      * @param index
      * @return 
      */
-    public <T extends RenderModule> T add(T pass, PassIndex index) {
-        return launcher.getOrCreate(index.getThreadIndex()).add(pass, index.queueIndex);
+    public <T extends RenderModule> T add(T module, int index) {
+        root.add(module, index);
+        return module;
     }
     
     /**
@@ -278,7 +290,8 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
      */
     public <T extends RenderModule> T[] addLoop(T[] array, Function<Integer, T> factory,
             String inTicket, String outTicket) {
-        return launcher.getOrCreate(PassIndex.MAIN_THREAD).addLoop(array, -1, factory, inTicket, outTicket);
+        root.addLoop(array, -1, factory, inTicket, outTicket);
+        return array;
     }
     /**
      * Adds an array of passes connected in series to the framegraph.
@@ -295,10 +308,10 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
      * @return array of passes
      * @see PassThread#addLoop(T[], int, java.util.function.Supplier, java.lang.String, java.lang.String)
      */
-    public <T extends RenderModule> T[] addLoop(T[] array, PassIndex index,
+    public <T extends RenderModule> T[] addLoop(T[] array, int index,
             Function<Integer, T> function, String inTicket, String outTicket) {
-        return launcher.getOrCreate(index.getThreadIndex()).addLoop(
-                array, index.queueIndex, function, inTicket, outTicket);
+        root.addLoop(array, index, function, inTicket, outTicket);
+        return array;
     }
     
     /**
@@ -307,9 +320,11 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
      * @param <T>
      * @param by
      * @return first qualifying pass, or null
+     * @deprecated 
      */
+    @Deprecated
     public <T extends RenderModule> T get(ModuleLocator<T> by) {
-        return launcher.get(by);
+        return (T)root.get(by);
     }
     
     /**
@@ -482,25 +497,35 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
     }
     
     /**
+     * Adds the thread to the execution stack.
+     * 
+     * @param thread 
+     */
+    public void registerExecutingThread(RenderThread thread) {
+        threadExecutionStack.add(thread);
+    }
+    /**
      * Called automatically to notify the FrameGraph that a {@link RenderThread} has completed execution.
      * 
      * @param thread
      */
     public void notifyThreadComplete(RenderThread thread) {
-        launcher.notifyThreadComplete(thread);
+        activeThreads--;
     }
     /**
      * Called automatically when a rendering exception occurs.
-     * 
-     * @param ex
      */
     public void interruptRendering() {
         if (!interrupted) {
             interrupted = true;
-            launcher.interrupt();
+            root.interrupt();
         }
     }
     
+    
+    public RenderContainer getRoot() {
+        return root;
+    }
     /**
      * Gets the {@link AssetManager} assigned to this FrameGraph.
      * 
@@ -564,7 +589,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
      * @return 
      */
     public boolean isAsync() {
-        return launcher.isAsync();
+        return index.getNumActiveThreads() > 1;
     }
     /**
      * 
@@ -595,12 +620,12 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
      * @throws IllegalStateException if the tree root is already a member of a FrameGraph
      */
     public final FrameGraph applyData(ModuleGraphData data) {
-        launcher.cleanupModule();
-        launcher = data.getRootModule(ThreadLauncher.class);
-        if (launcher.isAssigned()) {
+        root.cleanupModule();
+        root = data.getRootModule(RenderContainer.class);
+        if (root.isAssigned()) {
             throw new IllegalStateException("Cannot apply tree root that is already a member of a FrameGraph.");
         }
-        launcher.initializeModule(this);
+        root.initializeModule(this);
         return this;
     }
     /**
@@ -656,7 +681,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
      * @return 
      */
     public ModuleGraphData createModuleData() {
-        return new ModuleGraphData(launcher);
+        return new ModuleGraphData(root);
     }
     
     /**

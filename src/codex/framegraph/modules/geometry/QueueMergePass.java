@@ -79,9 +79,11 @@ public class QueueMergePass extends RenderPass {
     }
     @Override
     protected void execute(FGRenderContext context) {
-        GeometryQueue[] queues = acquireArray("Queues", n -> new GeometryQueue[n]);
+        GeometryQueue[] queues = acquireArrayOrElse("Queues", n -> new GeometryQueue[n], null);
         for (GeometryQueue q : queues) {
-            target.add(q);
+            if (q != null) {
+                target.add(q);
+            }
         }
         resources.setPrimitive(result, target);
     }

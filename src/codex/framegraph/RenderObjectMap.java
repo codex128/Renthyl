@@ -320,7 +320,7 @@ public class RenderObjectMap {
      * @param index index to reserve the object at
      * @return true if the referenced object exists
      */
-    public boolean reserve(long objectId, PassIndex index) {
+    public boolean reserve(long objectId, ModuleIndex index) {
         RenderObject obj = objectMap.get(objectId);
         if (obj != null) {
             obj.reserve(index);

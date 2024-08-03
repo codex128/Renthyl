@@ -58,7 +58,7 @@ public class TimeFrame {
      * @param index
      * @param length 
      */
-    public TimeFrame(PassIndex index, int length) {
+    public TimeFrame(ModuleIndex index, int length) {
         this.thread = index.getThreadIndex();
         this.queue = index.getQueueIndex();
         this.length = length;
@@ -75,7 +75,7 @@ public class TimeFrame {
      * 
      * @param passIndex 
      */
-    public void extendTo(PassIndex passIndex) {
+    public void extendTo(ModuleIndex passIndex) {
         if (passIndex.getThreadIndex() != thread) {
             async = true;
         } else {

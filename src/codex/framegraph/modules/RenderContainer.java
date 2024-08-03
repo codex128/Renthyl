@@ -6,7 +6,7 @@ package codex.framegraph.modules;
 
 import codex.framegraph.FGRenderContext;
 import codex.framegraph.FrameGraph;
-import codex.framegraph.PassIndex;
+import codex.framegraph.IndexSupplier;
 import com.jme3.export.InputCapsule;
 import com.jme3.export.JmeExporter;
 import com.jme3.export.JmeImporter;
@@ -39,15 +39,18 @@ public class RenderContainer <R extends RenderModule> extends RenderModule imple
         }
     }
     @Override
-    public void prepareModuleRender(FGRenderContext context, PassIndex index) {
-        super.prepareModuleRender(context, index);
+    public void updateModuleIndex(IndexSupplier supplier) {
+        super.updateModuleIndex(supplier);
         for (RenderModule m : queue) {
-            index.queueIndex++;
-            m.prepareModuleRender(context, index);
+            m.updateModuleIndex(supplier);
         }
     }
     @Override
-    public void prepareRender(FGRenderContext context) {}
+    public void prepareModuleRender(FGRenderContext context) {
+        for (RenderModule m : queue) {
+            m.prepareModuleRender(context);
+        }
+    }
     @Override
     public void executeRender(FGRenderContext context) {
         for (RenderModule m : queue) {
@@ -174,7 +177,8 @@ public class RenderContainer <R extends RenderModule> extends RenderModule imple
         return null;
     }
     public boolean remove(R module) {
-        if (queue.remove(module)) {
+        if (module.getParent() == this && queue.remove(module)) {
+            module.setParent(null);
             module.cleanupModule();
             return true;
         }
@@ -185,6 +189,7 @@ public class RenderContainer <R extends RenderModule> extends RenderModule imple
             return null;
         }
         R m = queue.remove(index);
+        m.setParent(null);
         m.cleanupModule();
         return m;
     }

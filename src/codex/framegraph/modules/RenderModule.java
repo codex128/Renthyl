@@ -7,7 +7,8 @@ package codex.framegraph.modules;
 import codex.framegraph.Connectable;
 import codex.framegraph.FGRenderContext;
 import codex.framegraph.FrameGraph;
-import codex.framegraph.PassIndex;
+import codex.framegraph.IndexSupplier;
+import codex.framegraph.ModuleIndex;
 import codex.framegraph.ResourceTicket;
 import codex.framegraph.ResourceUser;
 import codex.framegraph.TicketGroup;
@@ -31,7 +32,7 @@ public abstract class RenderModule implements Connectable, ResourceUser, Savable
     protected FrameGraph frameGraph;
     protected String name = "RenderModule";
     protected RenderContainer parent;
-    protected final PassIndex index = new PassIndex();
+    protected final ModuleIndex index = new ModuleIndex();
     protected final LinkedList<ResourceTicket> inputs = new LinkedList<>();
     protected final LinkedList<ResourceTicket> outputs = new LinkedList<>();
     protected final HashMap<String, TicketGroup> groups = new HashMap<>();
@@ -48,7 +49,7 @@ public abstract class RenderModule implements Connectable, ResourceUser, Savable
         return outputs;
     }
     @Override
-    public PassIndex getIndex() {
+    public ModuleIndex getIndex() {
         return index;
     }
     @Override
@@ -207,7 +208,7 @@ public abstract class RenderModule implements Connectable, ResourceUser, Savable
     private static ResourceTicket getTicketFromStream(Stream<ResourceTicket> stream, String name) {
         return stream.filter(t -> name.equals(t.getName())).findFirst().orElse(null);
     }
-    public ResourceTicket[] getGroupArray(String name) {
+    protected ResourceTicket[] getGroupArray(String name) {
         return getGroup(name, true).getArray();
     }
     
@@ -218,6 +219,12 @@ public abstract class RenderModule implements Connectable, ResourceUser, Savable
         interrupted = true;
     }
     
+    /**
+     * Initializes this module to the FrameGraph.
+     * 
+     * @param frameGraph 
+     * @throws IllegalStateException if module is already initialized to a FrameGraph.
+     */
     public void initializeModule(FrameGraph frameGraph) {
         if (this.frameGraph != null) {
             throw new IllegalStateException("Module already initialized.");
@@ -226,16 +233,36 @@ public abstract class RenderModule implements Connectable, ResourceUser, Savable
         id = this.frameGraph.getNextId();
         initModule(this.frameGraph);
     }
-    public void prepareModuleRender(FGRenderContext context, PassIndex index) {
-        this.index.set(index);
-        prepareRender(context);
+    /**
+     * Updates this module's index from the supplier.
+     * 
+     * @param supplier 
+     */
+    public void updateModuleIndex(IndexSupplier supplier) {
+        this.index.set(supplier.getNextInQueue());
     }
+    /**
+     * Executes this module.
+     * 
+     * @param context 
+     */
     public void executeModuleRender(FGRenderContext context) {
         if (!isUsed()) {
             return;
         }
         executeRender(context);
     }
+    /**
+     * Resets this module from execution.
+     * 
+     * @param context 
+     */
+    public void resetModuleRender(FGRenderContext context) {
+        resetRender(context);
+    }
+    /**
+     * Cleans up this module from being attached to a FrameGraph.
+     */
     public void cleanupModule() {
         id = -1;
         if (frameGraph != null) {
@@ -261,7 +288,7 @@ public abstract class RenderModule implements Connectable, ResourceUser, Savable
      * 
      * @param context 
      */
-    protected abstract void prepareRender(FGRenderContext context);
+    protected abstract void prepareModuleRender(FGRenderContext context);
     /**
      * Executes the RenderModule implementation.
      * <p>
@@ -286,41 +313,74 @@ public abstract class RenderModule implements Connectable, ResourceUser, Savable
      */
     protected abstract void cleanupModule(FrameGraph frameGraph);
     
-    protected abstract void renderingComplete();
+    /**
+     * Called when all rendering is complete in a render frame this
+     * module participated in (regardless of culling).
+     */
+    public abstract void renderingComplete();
+    /**
+     * Traverses this module.
+     * 
+     * @param traverser 
+     */
     public abstract void traverse(Consumer<RenderModule> traverser);
     
+    /**
+     * Sets the name of this module.
+     * 
+     * @param name 
+     */
     public void setName(String name) {
         this.name = name;
     }
+    /**
+     * Sets the parent of this module.
+     * 
+     * @param parent
+     * @return 
+     */
     protected boolean setParent(RenderContainer parent) {
         this.parent = parent;
         return true;
     }
     
+    /**
+     * 
+     * @return 
+     */
     public String getName() {
         return name;
     }
+    /**
+     * 
+     * @return 
+     */
     public RenderContainer getParent() {
         return parent;
     }
+    /**
+     * Returns true if this module is assigned to a FrameGraph.
+     * 
+     * @return 
+     */
     public boolean isAssigned() {
         return frameGraph != null;
     }
+    /**
+     * Returns true if this module's execution has been interrupted.
+     * 
+     * @return 
+     */
     public boolean isInterrupted() {
         return interrupted;
     }
+    /**
+     * Returns true if this module runs on a thread other than the main thread.
+     * 
+     * @return 
+     */
     public boolean isAsync() {
         return !index.isMainThread();
-    }
-    public boolean isAncenstor(RenderModule ancestor) {
-        RenderModule p = parent;
-        while (p != null) {
-            if (p == ancestor) {
-                return true;
-            }
-            p = p.parent;
-        }
-        return false;
     }
     
 }

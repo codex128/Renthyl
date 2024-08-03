@@ -161,7 +161,7 @@ public class RenderObject <T> {
      * 
      * @param index 
      */
-    public void reserve(PassIndex index) {
+    public void reserve(ModuleIndex index) {
         reservations.add(new Reservation(index));
     }
     /**
@@ -179,7 +179,7 @@ public class RenderObject <T> {
      * @param index
      * @return true if a reservation was claimed.
      */
-    public boolean claimReservation(PassIndex index) {
+    public boolean claimReservation(ModuleIndex index) {
         for (Reservation r : reservations) {
             if (r.claim(index)) return true;
         }
@@ -270,14 +270,14 @@ public class RenderObject <T> {
     
     private static class Reservation {
         
-        private final PassIndex index;
+        private final ModuleIndex index;
         private boolean claimed = false;
         
-        public Reservation(PassIndex index) {
+        public Reservation(ModuleIndex index) {
             this.index = index;
         }
         
-        public boolean claim(PassIndex index) {
+        public boolean claim(ModuleIndex index) {
             if (this.index.equals(index)) {
                 claimed = true;
                 return true;
