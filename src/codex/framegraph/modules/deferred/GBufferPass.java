@@ -74,9 +74,9 @@ public class GBufferPass extends RenderPass implements GeometryRenderHandler {
         adapter.add("Common/MatDefs/Light/PBRLighting.j3md", "FrameGraphCommon/MatDefs/GBuffer/PBRLighting.fgmt");
         adapter.add("Common/MatDefs/Light/Lighting.j3md", "FrameGraphCommon/MatDefs/GBuffer/Lighting.fgmt");
         adapter.add("Common/MatDefs/Misc/Unshaded.j3md", "FrameGraphCommon/MatDefs/GBuffer/Unshaded.fgmt");
-        adapter.add("Common/MatDefs/Terrain/Terrain.j3md", "FrameGraphCommon/MatDefs/GBuffer/Terrain.fgmt");
+        //adapter.add("Common/MatDefs/Terrain/Terrain.j3md", "FrameGraphCommon/MatDefs/GBuffer/Terrain.fgmt");
         adapter.add("Common/MatDefs/Terrain/PBRTerrain.j3md", "FrameGraphCommon/MatDefs/GBuffer/PBRTerrain.fgmt");
-        adapter.add("Common/MatDefs/Terrain/AdvancedPBRTerrain.j3md", "FrameGraphCommon/MatDefs/GBuffer/AdvacedPBRTerrain.fgmt");
+        adapter.add("Common/MatDefs/Terrain/AdvancedPBRTerrain.j3md", "FrameGraphCommon/MatDefs/GBuffer/AdvancedPBRTerrain.fgmt");
         adapter.add("Common/MatDefs/Terrain/TerrainLighting.j3md", "FrameGraphCommon/MatDefs/GBuffer/TerrainLighting.fgmt");
     }
     
@@ -121,7 +121,6 @@ public class GBufferPass extends RenderPass implements GeometryRenderHandler {
         context.getRenderer().setFrameBuffer(fb);
         context.getRenderer().clearBuffers(true, true, true);
         context.getRenderer().setBackgroundColor(ColorRGBA.BlackNoAlpha);
-        context.getRenderManager().setGeometryRenderHandler(this);
         GeometryQueue queue = resources.acquire(geometry);
         context.renderGeometry(queue, null, this);
         resources.setPrimitive(numRendersTicket, numRenders);
@@ -137,13 +136,16 @@ public class GBufferPass extends RenderPass implements GeometryRenderHandler {
             return false;
         }
         material.selectTechnique(GBUFFER_PASS, rm);
-        material.render(geom, rm);
+        rm.renderGeometry(geom);
         numRenders++;
         return true;
     }
     
     public static void addMaterialAdaption(String matdef, String technique) {
         adapter.add(matdef, technique);
+    }
+    public static void adaptAllMaterials(AssetManager assetManager) {
+        adapter.adaptAll(assetManager);
     }
     
 }

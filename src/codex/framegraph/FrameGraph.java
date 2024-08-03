@@ -358,6 +358,15 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
         return setSetting(name, enable ? 0 : -1);
     }
     /**
+     * Enables the named feature if it is disabled, and vise versa.
+     * 
+     * @param name
+     * @return 
+     */
+    public boolean toggleFeature(String name) {
+        return enableFeature(name, !isFeatureEnabled(name)) == 0;
+    }
+    /**
      * Gets the object registered under the name in the settings map,
      * or null if none is registered.
      * 
@@ -372,6 +381,33 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
         } else {
             return null;
         }
+    }
+    /**
+     * Gets the object of the type registered under the name in
+     * the settings map.
+     * 
+     * @param <T>
+     * @param name
+     * @param type
+     * @return 
+     */
+    public <T> T getSetting(String name, Class<T> type) {
+        Object obj = settings.get(name);
+        if (obj != null && type.isAssignableFrom(obj.getClass())) {
+            return (T)obj;
+        } else {
+            return null;
+        }
+    }
+    /**
+     * Returns true if the named feature is enabled.
+     * 
+     * @param name
+     * @return 
+     */
+    public boolean isFeatureEnabled(String name) {
+        Integer feature = getSetting(name, Integer.class);
+        return feature != null && feature == 0;
     }
     /**
      * Removes the object registered under the name in the settings map.

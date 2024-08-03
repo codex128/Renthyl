@@ -24,8 +24,8 @@ MaterialDef DeferredShading {
 
     Technique DeferredPass {
 
-        VertexShader GLSL310 GLSL300 GLSL100 GLSL150:   Common/MatDefs/ShadingCommon/DeferredShading.vert
-        FragmentShader GLSL310 GLSL300 GLSL100 GLSL150: Common/MatDefs/ShadingCommon/DeferredShading.frag
+        VertexShader GLSL310 GLSL300 GLSL100 GLSL150:   FrameGraphCommon/MatDefs/Deferred/DeferredShading.vert
+        FragmentShader GLSL310 GLSL300 GLSL100 GLSL150: FrameGraphCommon/MatDefs/Deferred/DeferredShading.frag
 
         WorldParameters {
             CameraPosition

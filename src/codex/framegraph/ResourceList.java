@@ -115,7 +115,7 @@ public class ResourceList {
     private int add(ResourceView res) {
         assert res != null;
         if (nextSlot >= resources.size()) {
-            // addUserEvent resource to end of list
+            // add resource to end of list
             resources.add(res);
             nextSlot++;
             return resources.size()-1;

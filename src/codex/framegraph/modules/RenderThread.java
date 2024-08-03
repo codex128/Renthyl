@@ -17,16 +17,26 @@ public class RenderThread extends RenderContainer<RenderModule> implements Runna
     private static final Logger LOG = Logger.getLogger(RenderThread.class.getName());
     
     private FGRenderContext context;
+    private Thread thread;
+    private boolean executeNext = false;
     
     @Override
     public void run() {
-        try {
-            executeModuleRender(context);
-        } catch (Exception ex) {
-            LOG.log(Level.SEVERE, "An exception occured while executing RenderThread at index "+index.threadIndex+'.', ex);
-            frameGraph.interruptRendering();
-        } finally {
-            frameGraph.notifyThreadComplete(this);
+        while (true) {
+            try {
+                executeModuleRender(context);
+            } catch (Exception ex) {
+                LOG.log(Level.SEVERE, "An exception occured while executing RenderThread at index "+index.threadIndex+'.', ex);
+                frameGraph.interruptRendering();
+            } finally {
+                frameGraph.notifyThreadComplete(this);
+            }
+            while (!executeNext && !isInterrupted() && thread != null) {}
+            executeNext = false;
+            thread = null;
+            //if (isInterrupted() || exit) {
+                break;
+            //}
         }
     }
     
@@ -50,10 +60,16 @@ public class RenderThread extends RenderContainer<RenderModule> implements Runna
         }
         if (!isAsync()) {
             run();
+        } else if (thread == null) {
+            thread = new Thread(this);
+            thread.start();
         } else {
-            Thread t = new Thread(this);
-            t.start();
+            executeNext = true;
         }
+    }
+    
+    public void stopThreadExecution() {
+        thread = null;
     }
     
 }

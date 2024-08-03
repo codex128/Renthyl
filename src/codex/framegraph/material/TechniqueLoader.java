@@ -30,7 +30,7 @@ public class TechniqueLoader implements AssetLoader {
             in = Preprocessor.apply(in);
             load(BlockLanguageParser.parse(in).get(0));
         } finally {
-            if (in != null){
+            if (in != null) {
                 in.close();
             }
         }
@@ -54,7 +54,8 @@ public class TechniqueLoader implements AssetLoader {
         for (Statement content : root.getContents()) {
             String line = content.getLine().trim();
             if (line.contains("Shader")) {
-                shaders.add(ShaderInfo.fromStatement(line));
+                ShaderInfo info = ShaderInfo.fromStatement(line);
+                shaders.add(info);
             } else if (line.startsWith("WorldParameters")) {
                 for (Statement s : content.getContents()) {
                     worldParams.add(s.getLine().trim());

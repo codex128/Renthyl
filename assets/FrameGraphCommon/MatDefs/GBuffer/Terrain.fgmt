@@ -11,8 +11,8 @@ Technique GBufferPass {
 
     Defines {
         BOUND_DRAW_BUFFER: BoundDrawBuffer
-        INSTANCING : UseInstancing
-        SEPARATE_TEXCOORD : SeparateTexCoord
+        //INSTANCING : UseInstancing
+        //SEPARATE_TEXCOORD : SeparateTexCoord
         HAS_COLORMAP : ColorMap
         HAS_LIGHTMAP : LightMap
         HAS_VERTEXCOLOR : VertexColor

@@ -8,7 +8,9 @@ import com.jme3.asset.AssetKey;
 import com.jme3.asset.AssetManager;
 import com.jme3.material.Material;
 import com.jme3.material.MaterialDef;
+import com.jme3.material.TechniqueDef;
 import java.util.HashMap;
+import java.util.List;
 
 /**
  *
@@ -22,9 +24,18 @@ public class MaterialAdapter {
         adapters.put(matdefName, techniqueName);
     }
     
+    public void adaptAll(AssetManager assetManager) {
+        for (String m : adapters.keySet()) {
+            MaterialDef matdef = assetManager.loadAsset(new AssetKey<>(m));
+            RawTechnique raw = assetManager.loadAsset(new AssetKey<>(adapters.get(m)));
+            System.out.println("adapting "+m);
+            raw.apply(matdef);
+        }
+    }
     public boolean adaptMaterial(AssetManager assetManager, Material material, String requiredTechnique) {
         MaterialDef matdef = material.getMaterialDef();
-        if (!matdef.getTechniqueDefs(requiredTechnique).isEmpty()) {
+        List<TechniqueDef> techs = matdef.getTechniqueDefs(requiredTechnique);
+        if (techs != null && !techs.isEmpty()) {
             return true;
         }
         String techFile = adapters.get(matdef.getAssetName());
@@ -32,6 +43,7 @@ public class MaterialAdapter {
             return false;
         }
         RawTechnique raw = assetManager.loadAsset(new AssetKey<>(techFile));
+        raw.setName(requiredTechnique);
         raw.apply(matdef);
         return true;
     }

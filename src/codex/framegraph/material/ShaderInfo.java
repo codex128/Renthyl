@@ -5,6 +5,7 @@
 package codex.framegraph.material;
 
 import com.jme3.shader.Shader;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -36,13 +37,18 @@ public class ShaderInfo {
         return versions;
     }
     
+    @Override
+    public String toString() {
+        return "ShaderInfo[type="+type+", file=\""+fileName+"\", versions="+Arrays.toString(versions)+']';
+    }
+    
     public static ShaderInfo fromStatement(String statement) {
         String[] file = statement.split(":");
         if (file.length != 2) {
             throw new IllegalStateException("Incorrect syntax.");
         }
         String[] args = file[0].split(whitespace);
-        Shader.ShaderType type = Enum.valueOf(Shader.ShaderType.class, args[0].trim());
+        Shader.ShaderType type = getShaderType(args[0].trim());
         int[] versions = new int[args.length-1];
         for (int i = 1; i < args.length; i++) {
             versions[i-1] = Integer.parseInt(args[i].trim().substring(4));
@@ -62,6 +68,15 @@ public class ShaderInfo {
     }
     public static String stringVersion(int version) {
         return "GLSL"+version;
+    }
+    
+    private static Shader.ShaderType getShaderType(String arg) {
+        int i = arg.indexOf("Shader");
+        if (i <= 0) {
+            throw new IllegalArgumentException(arg+" is not a valid shader type.");
+        }
+        arg = arg.substring(0, i);
+        return Enum.valueOf(Shader.ShaderType.class, arg);
     }
     
 }

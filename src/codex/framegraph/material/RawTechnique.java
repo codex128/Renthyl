@@ -18,15 +18,28 @@ import java.util.Set;
  */
 public class RawTechnique {
     
-    private final String name;
-    private final ShaderInfo[] shaders;
-    private final String[] worldParams;
-    private final String[] defines;
+    private String name;
+    private ShaderInfo[] shaders;
+    private String[] worldParams;
+    private String[] defines;
 
     public RawTechnique(String name, ShaderInfo[] shaders, String[] worldParams, String[] defines) {
         this.name = name;
         this.shaders = shaders;
         this.worldParams = worldParams;
+        this.defines = defines;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+    public void setShaders(ShaderInfo... shaders) {
+        this.shaders = shaders;
+    }
+    public void setWorldParams(String... worldParams) {
+        this.worldParams = worldParams;
+    }
+    public void setDefines(String... defines) {
         this.defines = defines;
     }
 
@@ -73,9 +86,11 @@ public class RawTechnique {
         TechniqueDef[] array = new TechniqueDef[versions.size()];
         int i = 0;
         for (int v : versions) {
+            cloner.clearIndex();
             TechniqueDef td = array[i++] = cloner.clone(def);
+            String version = ShaderInfo.stringVersion(v);
             for (ShaderInfo s : shaders) {
-                td.addShaderFile(s.getType(), s.getFileName(), ShaderInfo.stringVersion(v));
+                td.addShaderFile(s.getType(), s.getFileName(), version);
             }
             matdef.addTechniqueDef(td);
         }

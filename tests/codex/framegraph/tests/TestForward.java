@@ -20,7 +20,7 @@ public class TestForward extends TestApplication {
     }
     
     @Override
-    public void simpleInitApp() {
+    public void testInitApp() {
         
         FrameGraph.initialize(this);
         

@@ -51,6 +51,8 @@ import com.jme3.asset.AssetManager;
  */
 public class FrameGraphFactory {
     
+    private FrameGraphFactory() {}
+    
     /**
      * Constructs a standard forward FrameGraph, with no controllable settings.
      * 
@@ -108,6 +110,8 @@ public class FrameGraphFactory {
         Attribute tileInfoAttr = fg.add(new Attribute());
         Junction tileJunct1 = fg.add(new Junction(1, 1));
         GBufferPass gbuf = fg.add(new GBufferPass());
+        Junction gbufDebugTarget = fg.add(new Junction(5, 1));
+        Attribute gbufDebug = fg.add(new Attribute());
         LightImagePass lightImg = fg.add(new LightImagePass(), new PassIndex(asyncThread, -1));
         Junction lightJunct = fg.add(new Junction(1, 6));
         Junction tileJunct2 = fg.add(new Junction(1, 2));
@@ -118,11 +122,17 @@ public class FrameGraphFactory {
         
         gbuf.makeInput(enqueue, "Opaque", "Geometry");
         
+        gbufDebugTarget.setIndexSource(new GraphSetting("GBufferDebug", -1));
+        gbufDebugTarget.makeGroupInput(gbuf, "GBufferData", Junction.getInput());
+        
+        gbufDebug.setName("GBufferDebug");
+        gbufDebug.makeInput(gbufDebugTarget, Junction.getOutput(), Attribute.INPUT);
+        
         GraphSetting<TiledRenderGrid> tileInfo = new GraphSetting<>("TileInfo", new TiledRenderGrid());
         tileInfoAttr.setName("TileInfo");
         tileInfoAttr.setSource(tileInfo);
         
-        GraphSetting<Integer> tileToggle = fg.setSetting("EnableLightTiling", tiled ? 0 : -1, -1);
+        GraphSetting<Integer> tileToggle = fg.setSetting("UseLightTiling", tiled ? 0 : -1, -1);
         tileJunct1.makeInput(tileInfoAttr, Attribute.OUTPUT, Junction.getInput(0));
         tileJunct1.setIndexSource(tileToggle);
         
@@ -159,6 +169,42 @@ public class FrameGraphFactory {
         geometry.makeInput(merge, "Result", "Geometry");
         
         return fg;
+        
+    }
+    
+    /**
+     * Utility class for creating test FrameGraphs.
+     */
+    public static class Test {
+        
+        private Test() {}
+        
+        public static FrameGraph testGBuffer(AssetManager assetManager) {
+            
+            FrameGraph fg = new FrameGraph(assetManager);
+            
+            SceneEnqueuePass enqueue = fg.add(new SceneEnqueuePass(true, true));
+            QueueMergePass merge = fg.add(new QueueMergePass(5));
+            GBufferPass gbuf = fg.add(new GBufferPass());
+            Junction junct = fg.add(new Junction(5, 1));
+            OutputPass out = fg.add(new OutputPass());
+            
+            merge.makeInput(enqueue, "Opaque", "Queues[0]");
+            merge.makeInput(enqueue, "Sky", "Queues[1]");
+            merge.makeInput(enqueue, "Transparent", "Queues[2]");
+            merge.makeInput(enqueue, "Gui", "Queues[3]");
+            merge.makeInput(enqueue, "Translucent", "Queues[4]");
+            
+            gbuf.makeInput(merge, "Result", "Geometry");
+            
+            junct.setIndexSource(new GraphSetting("GBuffer", 0));
+            junct.makeGroupInput(gbuf, "GBufferData", Junction.getInput());
+            
+            out.makeInput(junct, Junction.getOutput(), "Color");
+            
+            return fg;
+            
+        }
         
     }
     

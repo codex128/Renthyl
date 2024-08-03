@@ -6,14 +6,19 @@ package codex.framegraph.tests;
 
 import com.jme3.app.SimpleApplication;
 import com.jme3.environment.EnvironmentProbeControl;
+import com.jme3.font.BitmapFont;
+import com.jme3.font.BitmapText;
 import com.jme3.input.ChaseCamera;
 import com.jme3.light.AmbientLight;
 import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.FastMath;
+import com.jme3.math.Vector2f;
 import com.jme3.math.Vector3f;
+import com.jme3.scene.Geometry;
 import com.jme3.scene.Spatial;
+import com.jme3.scene.shape.Quad;
 import com.jme3.system.AppSettings;
 import com.jme3.texture.plugins.ktx.KTXLoader;
 import com.jme3.util.SkyFactory;
@@ -25,17 +30,20 @@ import com.jme3.util.mikktspace.MikktspaceTangentGenerator;
  */
 public abstract class TestApplication extends SimpleApplication {
 
+    protected final Vector2f windowSize = new Vector2f();
+    
     public static void main(String[] args) {
         TestApplication app = new TestAppImpl();
         app.applySettings();
         app.start();
     }
     
-    protected void applySettings() {
+    protected AppSettings applySettings() {
         AppSettings settings = new AppSettings(true);
         settings.setWidth(756);
         settings.setHeight(756);
         setSettings(settings);
+        return settings;
     }
     protected void setupCam(Spatial target) {
         ChaseCamera chaser = new ChaseCamera(cam, target, inputManager);
@@ -65,11 +73,29 @@ public abstract class TestApplication extends SimpleApplication {
         assetManager.registerLoader(KTXLoader.class, "ktx");
         viewPort.setBackgroundColor(ColorRGBA.White);
         Spatial model = assetManager.loadModel("Models/Tank/tank.j3o");
+        model.setName("Tank");
         MikktspaceTangentGenerator.generate(model);
         rootNode.attachChild(model);
         Material pbrMat = assetManager.loadMaterial("Models/Tank/tank.j3m");
         model.setMaterial(pbrMat);
         return model;
+    }
+    protected BitmapText loadText(String text, float x, float y, float fontSize) {
+        BitmapFont font = assetManager.loadFont("Interface/Fonts/Default.fnt");
+        BitmapText bitmap = new BitmapText(font);
+        bitmap.setSize(fontSize <= 0 ? font.getCharSet().getRenderedSize() : fontSize);
+        bitmap.setText(text);
+        bitmap.setLocalTranslation(x, y, 0);
+        guiNode.attachChild(bitmap);
+        return bitmap;
+    }
+    protected Geometry loadTextureViewer(float x, float y, float w, float h) {
+        Geometry g = new Geometry("TextureViewer", new Quad(w, h));
+        g.setLocalTranslation(x, y, 0);
+        Material m = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
+        g.setMaterial(m);
+        guiNode.attachChild(g);
+        return g;
     }
     
     protected void setupAll() {
@@ -78,10 +104,19 @@ public abstract class TestApplication extends SimpleApplication {
         loadSky();
     }
     
+    @Override
+    public void simpleInitApp() {
+        windowSize.x = context.getSettings().getWidth();
+        windowSize.y = context.getSettings().getHeight();
+        testInitApp();
+    }
+    
+    protected abstract void testInitApp();
+    
     private static class TestAppImpl extends TestApplication {
 
         @Override
-        public void simpleInitApp() {
+        public void testInitApp() {
             setupAll();
         }
         

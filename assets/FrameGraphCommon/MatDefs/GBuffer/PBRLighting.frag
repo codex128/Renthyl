@@ -252,4 +252,10 @@ void main(){
 
     // shading model id
     outGBuffer2.a = PBR_LIGHTING + 0.01f;
+    
 }
+
+
+
+
+

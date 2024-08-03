@@ -78,12 +78,10 @@ public class Junction <T> extends RenderPass {
     
     @Override
     protected void initialize(FrameGraph frameGraph) {
-        for (int i = 0; i < length; i++) {
-            if (groupSize > 1) {
-                addInputGroup(getInput(i), groupSize);
-            } else {
-                addInput(getInput(i));
-            }
+        if (groupSize == 1) {
+            addInputGroup(getInput(), length);
+        } else for (int i = 0; i < length; i++) {
+            addInputGroup(getInput(i), groupSize);
         }
         if (groupSize > 1) {
             addOutputGroup(getOutput(), groupSize);
@@ -93,34 +91,6 @@ public class Junction <T> extends RenderPass {
     }
     @Override
     protected void prepare(FGRenderContext context) {
-        int size;
-        if (groupSize > 1) {
-            size = groups.size()-1;
-        } else {
-            size = inputs.size()-EXTRA_INPUTS;
-        }
-        // remove excess tickets
-        while (size > length) {
-            size--;
-            if (groupSize > 1) {
-                ResourceTicket[] array = removeGroup(getInput(size));
-                for (ResourceTicket t : array) {
-                    t.setSource(null);
-                }
-            } else {
-                inputs.removeLast().setSource(null);
-            }
-        }
-        // add deficit tickets
-        while (size < length) {
-            if (groupSize > 1) {
-                addInputGroup(getInput(size), groupSize);
-            } else {
-                addInput(getInput(size));
-            }
-            size++;
-        }
-        // connect output to input
         if (source != null) {
             connect(source.getGraphValue(frameGraph, context.getViewPort()));
         } else {
@@ -172,11 +142,14 @@ public class Junction <T> extends RenderPass {
                 t.setSource(null);
             }
         } else {
-            output.setSource(assignNull ? null : inputs.get(i));
+            output.setSource(assignNull ? null : getGroupArray(getInput())[i]);
         }
     }
     
     public final void setLength(int length) {
+        if (isAssigned()) {
+            throw new IllegalStateException("Cannot change length while assigned.");
+        }
         if (length <= 0) {
             throw new IllegalArgumentException("Length must be greater than zero.");
         }
@@ -211,6 +184,13 @@ public class Junction <T> extends RenderPass {
         return defaultIndex;
     }
     
+    /**
+     * 
+     * @return 
+     */
+    public static String getInput() {
+        return "Input";
+    }
     /**
      * Returns a string referencing an individual input (groupSize = 1) or 
      * an input group (groupSize &gt; 1).
