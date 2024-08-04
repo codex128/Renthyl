@@ -42,6 +42,9 @@ import codex.framegraph.modules.deferred.DeferredPass;
 import codex.framegraph.modules.light.LightImagePass;
 import codex.framegraph.client.GraphSetting;
 import codex.framegraph.light.TiledRenderGrid;
+import codex.framegraph.modules.RenderContainer;
+import codex.framegraph.modules.RenderModule;
+import codex.framegraph.modules.RenderThread;
 import com.jme3.asset.AssetManager;
 
 /**
@@ -104,7 +107,10 @@ public class FrameGraphFactory {
         FrameGraph fg = new FrameGraph(assetManager);
         fg.setName(tiled ? "TiledDeferred" : "Deferred");
         
-        int asyncThread = async ? 1 : ModuleIndex.MAIN_THREAD;
+        RenderThread thread = new RenderThread();
+        if (async) {
+            fg.add(thread);
+        }
         
         SceneEnqueuePass enqueue = fg.add(new SceneEnqueuePass(true, true));
         Attribute tileInfoAttr = fg.add(new Attribute());
@@ -112,12 +118,13 @@ public class FrameGraphFactory {
         GBufferPass gbuf = fg.add(new GBufferPass());
         Junction gbufDebugTarget = fg.add(new Junction(5, 1));
         Attribute gbufDebug = fg.add(new Attribute());
-        LightImagePass lightImg = fg.add(new LightImagePass(), new ModuleIndex(asyncThread, -1));
+        //LightImagePass lightImg = fg.add(new LightImagePass(), new ModuleIndex(asyncThread, -1));
+        LightImagePass lightImg = add(new LightImagePass(), thread, fg.getRoot(), async);
         Junction lightJunct = fg.add(new Junction(1, 6));
         Junction tileJunct2 = fg.add(new Junction(1, 2));
         DeferredPass deferred = fg.add(new DeferredPass());
         OutputPass defOut = fg.add(new OutputPass(0f));
-        QueueMergePass merge = fg.add(new QueueMergePass(4), new ModuleIndex(asyncThread, -1));
+        QueueMergePass merge = add(new QueueMergePass(4), thread, fg.getRoot(), async);
         OutputGeometryPass geometry = fg.add(new OutputGeometryPass());
         
         gbuf.makeInput(enqueue, "Opaque", "Geometry");
@@ -168,6 +175,12 @@ public class FrameGraphFactory {
         
         return fg;
         
+    }
+    
+    private static <T extends RenderModule> T add(T module, RenderContainer target1, RenderContainer target2, boolean val) {
+        if (val) target1.add(module);
+        else target2.add(module);
+        return module;
     }
     
     /**

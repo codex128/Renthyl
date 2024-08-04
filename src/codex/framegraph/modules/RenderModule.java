@@ -239,7 +239,7 @@ public abstract class RenderModule implements Connectable, ResourceUser, Savable
      * @param supplier 
      */
     public void updateModuleIndex(IndexSupplier supplier) {
-        this.index.set(supplier.getNextInQueue());
+        supplier.getNextInQueue(index);
     }
     /**
      * Executes this module.

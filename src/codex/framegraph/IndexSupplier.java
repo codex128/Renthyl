@@ -21,7 +21,23 @@ public class IndexSupplier {
      * @return 
      */
     public ModuleIndex getNextInQueue() {
-        return new ModuleIndex(thread, queue++);
+        return getNextInQueue(null);
+    }
+    
+    /**
+     * Gets the next index in the queue by incrementing the queue
+     * index and storing the result in the given index.
+     * 
+     * @param store index to store result in, or null to create a new index
+     * @return 
+     */
+    public ModuleIndex getNextInQueue(ModuleIndex store) {
+        if (store == null) {
+            store = new ModuleIndex();
+        }
+        store.threadIndex = thread;
+        store.queueIndex = queue++;
+        return store;
     }
     
     /**
@@ -31,7 +47,24 @@ public class IndexSupplier {
      * @return 
      */
     public ModuleIndex getNextThread() {
-        return new ModuleIndex((thread = nextThread++), (queue = 0));
+        return getNextThread(null);
+    }
+    
+    /**
+     * Gets the next thread by incrementing the thread index and
+     * resetting the queue index, then storing the result in the
+     * given index.
+     * 
+     * @param store
+     * @return 
+     */
+    public ModuleIndex getNextThread(ModuleIndex store) {
+        if (store == null) {
+            store = new ModuleIndex();
+        }
+        store.threadIndex = thread = nextThread++;
+        store.queueIndex = queue = 0;
+        return store;
     }
     
     /**

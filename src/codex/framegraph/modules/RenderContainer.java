@@ -40,7 +40,7 @@ public class RenderContainer <R extends RenderModule> extends RenderModule imple
     }
     @Override
     public void updateModuleIndex(IndexSupplier supplier) {
-        super.updateModuleIndex(supplier);
+        supplier.getNextInQueue(index);
         for (RenderModule m : queue) {
             m.updateModuleIndex(supplier);
         }

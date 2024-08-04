@@ -11,7 +11,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- *
+ * Executes queued modules on another thread.
+ * 
  * @author codex
  */
 public class RenderThread extends RenderContainer<RenderModule> implements Runnable {
@@ -22,15 +23,14 @@ public class RenderThread extends RenderContainer<RenderModule> implements Runna
     private FGRenderContext context;
     private Thread thread;
     private boolean executeNext = false;
+    private boolean runAsync = true;
     
     @Override
     public void run() {
         while (true) {
             try {
                 for (RenderModule m : queue) {
-                    if (isInterrupted()) {
-                        break;
-                    }
+                    if (isInterrupted()) break;
                     m.executeModuleRender(context);
                 }
             } catch (Exception ex) {
@@ -54,30 +54,46 @@ public class RenderThread extends RenderContainer<RenderModule> implements Runna
     }
     @Override
     public void updateModuleIndex(IndexSupplier supplier) {
-        super.updateModuleIndex(supplier);
-        supplier.getNextThread();
-        for (RenderModule m : queue) {
-            m.updateModuleIndex(supplier);
+        if (runAsync) {
+            supplier.getNextInQueue(index);
+            supplier.getNextThread();
+            for (RenderModule m : queue) {
+                m.updateModuleIndex(supplier);
+            }
+            supplier.continueFromIndex(index);
+        } else {
+            super.updateModuleIndex(supplier);
         }
-        supplier.continueFromIndex(index);
     }
     @Override
     public void prepareModuleRender(FGRenderContext context) {
         super.prepareModuleRender(context);
-        if (!queue.isEmpty()) {
+        if (!queue.isEmpty() && runAsync) {
             frameGraph.registerExecutingThread(this);
+        } else {
+            thread = null;
         }
     }
     @Override
     public void executeModuleRender(FGRenderContext context) {
-        // do nothing
+        if (!runAsync) {
+            super.executeModuleRender(context);
+        }
     }
     @Override
     public void cleanupModule(FrameGraph frameGraph) {
         thread = null;
     }
     
+    /**
+     * Starts executing queued modules on a new thread.
+     * 
+     * @param context 
+     */
     public void startThreadExecution(FGRenderContext context) {
+        if (!runAsync) {
+            throw new IllegalStateException("Not set as asynchronous.");
+        }
         this.context = context;
         if (isInterrupted()) {
             frameGraph.notifyThreadComplete(this);
@@ -89,6 +105,29 @@ public class RenderThread extends RenderContainer<RenderModule> implements Runna
         } else {
             executeNext = true;
         }
+    }
+    
+    /**
+     * If true, child modules will be executed on a new thread.
+     * <p>
+     * Otherwise children will be executed as normal.
+     * 
+     * @param runAsync 
+     */
+    public void setRunAsync(boolean runAsync) {
+        this.runAsync = runAsync;
+        if (!this.runAsync) {
+            thread = null;
+            executeNext = false;
+        }
+    }
+    
+    /**
+     * 
+     * @return 
+     */
+    public boolean isRunAsync() {
+        return runAsync;
     }
     
 }
