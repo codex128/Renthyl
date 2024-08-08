@@ -28,13 +28,15 @@
  */
 package codex.renthyl.modules;
 
+import codex.renthyl.ExecutionThreadManager;
 import codex.renthyl.FGRenderContext;
 import codex.renthyl.FrameGraph;
-import codex.renthyl.IndexSupplier;
+import codex.renthyl.client.GraphSource;
 import com.jme3.export.InputCapsule;
 import com.jme3.export.JmeExporter;
 import com.jme3.export.JmeImporter;
 import com.jme3.export.OutputCapsule;
+import com.jme3.export.SavableObject;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -49,11 +51,11 @@ public class RenderThread extends RenderContainer<RenderModule> implements Runna
     private static final Logger LOG = Logger.getLogger(RenderThread.class.getName());
     
     private FGRenderContext context;
-    private int forcedThreadIndex = -1;
+    private GraphSource<Integer> threadIndexSource;
     
     public RenderThread() {}
-    public RenderThread(int forcedThreadIndex) {
-        this.forcedThreadIndex = forcedThreadIndex;
+    public RenderThread(GraphSource<Integer> threadIndexSource) {
+        this.threadIndexSource = threadIndexSource;
     }
     
     @Override
@@ -71,18 +73,16 @@ public class RenderThread extends RenderContainer<RenderModule> implements Runna
         }
     }
     @Override
-    public void updateModuleIndex(IndexSupplier supplier) {
-        supplier.getNextInQueue(index);
-        if (forcedThreadIndex >= 0) {
-            supplier.setCurrentThread(forcedThreadIndex);
-        } else {
-            supplier.getNextThread();
-        }
-        index.threadIndex = supplier.getCurrentThread();
+    public void updateModuleIndex(FGRenderContext context, ExecutionThreadManager threadManager, int parentThread) {
+        @SuppressWarnings("null")
+        int i = threadIndexSource != null ?
+                threadIndexSource.getGraphValue(frameGraph, context.getViewPort())
+                : parentThread;
+        if (i < 0) i = parentThread;
+        index.set(threadManager.add(this, i));
         for (RenderModule m : queue) {
-            m.updateModuleIndex(supplier);
+            m.updateModuleIndex(context, threadManager, i);
         }
-        supplier.continueFromIndex(index);
     }
     @Override
     public void prepareModuleRender(FGRenderContext context) {
@@ -107,36 +107,32 @@ public class RenderThread extends RenderContainer<RenderModule> implements Runna
     public void write(JmeExporter ex) throws IOException {
         super.write(ex);
         OutputCapsule out = ex.getCapsule(this);
-        out.write(forcedThreadIndex, "forcedThreadIndex", -1);
+        out.write(new SavableObject(threadIndexSource, true), "threadIndexSource", SavableObject.NULL);
     }
     @Override
     public void read(JmeImporter im) throws IOException {
         super.read(im);
         InputCapsule in = im.getCapsule(this);
-        forcedThreadIndex = in.readInt("forcedThreadIndex", -1);
+        threadIndexSource = in.readSavableObject("threadIndexSource", GraphSource.class);
     }
 
     /**
-     * Sets the execution thread this will execute on.
+     * Sets the source for the thread index.
      * <p>
-     * If greater than one, will run on the specified thread.
-     * If less than one, will run on the next unclaimed thread.
-     * If zero, will run on the main thread.
-     * <p>
-     * default=-1
+     * Negative indices will make this run on the next unclaimed thread.
      * 
-     * @param forcedThreadIndex 
+     * @param threadIndexSource 
      */
-    public void setForcedThreadIndex(int forcedThreadIndex) {
-        this.forcedThreadIndex = forcedThreadIndex;
+    public void setThreadIndexSource(GraphSource<Integer> threadIndexSource) {
+        this.threadIndexSource = threadIndexSource;
     }
     
     /**
      * 
      * @return 
      */
-    public int getForcedThreadIndex() {
-        return forcedThreadIndex;
+    public GraphSource<Integer> getThreadIndexSource() {
+        return threadIndexSource;
     }
     
     /**

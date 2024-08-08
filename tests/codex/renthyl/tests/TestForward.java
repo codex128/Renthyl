@@ -30,6 +30,7 @@ package codex.renthyl.tests;
 
 import codex.renthyl.FrameGraph;
 import codex.renthyl.FrameGraphFactory;
+import codex.renthyl.Renthyl;
 
 /**
  *
@@ -46,7 +47,7 @@ public class TestForward extends TestApplication {
     @Override
     public void testInitApp() {
         
-        FrameGraph.initialize(this);
+        Renthyl.initialize(this);
         
         FrameGraph fg = FrameGraphFactory.forward(assetManager);
         viewPort.setPipeline(fg);

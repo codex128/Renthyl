@@ -88,26 +88,11 @@ public class FrameGraphFactory {
      * @return deferred framegraph
      */
     public static FrameGraph deferred(AssetManager assetManager, boolean tiled) {
-        return deferred(assetManager, tiled, false);
-    }
-    
-    /**
-     * Constructs a deferred FrameGraph.
-     * 
-     * @param assetManager
-     * @param tiled true to enable tiled lighting
-     * @param async true to enable multithreading optimizations
-     * @return deferred framegraph
-     */
-    public static FrameGraph deferred(AssetManager assetManager, boolean tiled, boolean async) {
         
         FrameGraph fg = new FrameGraph(assetManager);
         fg.setName(tiled ? "TiledDeferred" : "Deferred");
         
-        RenderThread thread = new RenderThread();
-        if (async) {
-            fg.add(thread);
-        }
+        GraphSetting<Integer> async = new GraphSetting<>("Async", 0);
         
         SceneEnqueuePass enqueue = fg.add(new SceneEnqueuePass(true, true));
         Attribute tileInfoAttr = fg.add(new Attribute());
@@ -115,13 +100,12 @@ public class FrameGraphFactory {
         GBufferPass gbuf = fg.add(new GBufferPass());
         Junction gbufDebugTarget = fg.add(new Junction(5, 1));
         Attribute gbufDebug = fg.add(new Attribute());
-        //LightImagePass lightImg = fg.add(new LightImagePass(), new ModuleIndex(asyncThread, -1));
-        LightImagePass lightImg = add(new LightImagePass(), thread, fg.getRoot(), async);
+        LightImagePass lightImg = fg.add(new RenderThread(async)).add(new LightImagePass());
         Junction lightJunct = fg.add(new Junction(1, 6));
         Junction tileJunct2 = fg.add(new Junction(1, 2));
         DeferredPass deferred = fg.add(new DeferredPass());
         OutputPass defOut = fg.add(new OutputPass(0f));
-        QueueMergePass merge = add(new QueueMergePass(4), thread, fg.getRoot(), async);
+        QueueMergePass merge = fg.add(new RenderThread(async)).add(new QueueMergePass(4));
         OutputGeometryPass geometry = fg.add(new OutputGeometryPass());
         
         gbuf.makeInput(enqueue, "Opaque", "Geometry");

@@ -4,6 +4,7 @@
  */
 package codex.renthyl;
 
+import codex.renthyl.modules.RenderModule;
 import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
 import java.util.LinkedList;
@@ -21,6 +22,7 @@ public class ExecutionThreadManager {
     private static long timeout = 5000;
     
     private final ArrayList<ThreadQueue> threads;
+    private FGRenderContext context;
     private int aliveThreads = 0;
     private int activeThreads = 0;
     
@@ -48,14 +50,14 @@ public class ExecutionThreadManager {
             i--;
         }
         if (i == threads.size()) {
-            ThreadQueue t = new ThreadQueue();
+            ThreadQueue t = new ThreadQueue(i);
             threads.add(t);
             aliveThreads++;
             return t;
         }
         ThreadQueue t = threads.get(i);
         if (t == null) {
-            t = new ThreadQueue();
+            t = new ThreadQueue(i);
             threads.set(i, t);
             aliveThreads++;
         }
@@ -68,19 +70,23 @@ public class ExecutionThreadManager {
      * If the index is greater than the number of threads, a new thread
      * will be created.
      * 
-     * @param runnable
+     * @param module
      * @param index 
+     * @return  
      */
-    public void add(Runnable runnable, int index) {
-        getThread(index).add(runnable);
+    public ModuleIndex add(RenderModule module, int index) {
+        return getThread(index).add(module);
     }
     
     /**
      * Starts all queues.
+     * @param context
      */
-    public void start() {
-        for (ThreadQueue t : threads) {
-            if (t.start()) {
+    public void start(FGRenderContext context) {
+        this.context = context;
+        for (int i = threads.size()-1; i >= 0; i--) {
+            ThreadQueue t = threads.get(i);
+            if (t != null && t.start(i == 0)) {
                 activeThreads++;
             }
         }
@@ -105,7 +111,9 @@ public class ExecutionThreadManager {
      */
     public void terminateAll(boolean force) {
         for (ThreadQueue t : threads) {
-            t.terminate(force);
+            if (t != null) {
+                t.terminate(force);
+            }
         }
         threads.clear();
         aliveThreads = 0;
@@ -153,17 +161,23 @@ public class ExecutionThreadManager {
     
     private class ThreadQueue implements Runnable {
         
-        private final LinkedList<Runnable> queue = new LinkedList<>();
+        private final ModuleIndex index;
+        private final LinkedList<RenderModule> queue = new LinkedList<>();
         private Thread thread;
         private boolean run = false;
+        private boolean interrupt = false;
         private boolean used = false;
+        
+        public ThreadQueue(int index) {
+            this.index = new ModuleIndex(index, -1);
+        }
         
         @Override
         public void run() {
             while (true) {
-                for (Runnable r : queue) {
-                    r.run();
-                    if (thread == null) {
+                for (RenderModule r : queue) {
+                    r.executeModuleRender(context);
+                    if (interrupt) {
                         break;
                     }
                 }
@@ -171,13 +185,15 @@ public class ExecutionThreadManager {
                 run = false;
                 activeThreads--;
                 long start = System.currentTimeMillis();
-                while (!run && thread != null) {
+                while (!run && thread != null && !interrupt) {
                     if (System.currentTimeMillis()-start >= timeout) {
                         LOG.log(Level.WARNING, "Execution thread timed out after {0} milliseconds.", timeout);
                         thread = null;
                     }
                 }
-                if (thread == null) {
+                if (thread == null || interrupt) {
+                    interrupt = false;
+                    thread = null;
                     break;
                 }
             }
@@ -186,25 +202,30 @@ public class ExecutionThreadManager {
         /**
          * Adds the Runnable to the execution queue.
          * 
-         * @param runnable 
+         * @param module 
          */
-        public void add(Runnable runnable) {
+        public ModuleIndex add(RenderModule module) {
             if (run) {
                 throw new ConcurrentModificationException("Cannot add to queue while executing.");
             }
-            queue.add(runnable);
+            index.setQueueIndex(queue.size());
+            queue.add(module);
+            return index;
         }
         
         /**
          * Starts executing the queue if the queue is not empty.
          * 
+         * @param local run on the local thread
          * @return 
          */
-        public boolean start() {
+        public boolean start(boolean local) {
             if (!queue.isEmpty()) {
                 run = true;
                 used = true;
-                if (thread == null) {
+                if (local) {
+                    run();
+                } else if (thread == null) {
                     thread = new Thread(this);
                     thread.start();
                 }
@@ -219,10 +240,11 @@ public class ExecutionThreadManager {
          * @param force forcibly interrupts the thread without waiting for the queue it finish
          */
         public void terminate(boolean force) {
-            if (force && run) {
+            if (force && run && thread != null) {
                 thread.interrupt();
             }
             thread = null;
+            interrupt = true;
         }
         
         /**
@@ -234,6 +256,15 @@ public class ExecutionThreadManager {
         public boolean flush() {
             if (used) return !(used = false);
             else return used;
+        }
+        
+        /**
+         * Returns true if the queue is empty.
+         * 
+         * @return 
+         */
+        public boolean isEmpty() {
+            return queue.isEmpty();
         }
         
     }

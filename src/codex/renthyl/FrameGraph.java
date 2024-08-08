@@ -30,6 +30,7 @@ package codex.renthyl;
 
 import codex.renthyl.asset.FrameGraphKey;
 import codex.renthyl.client.GraphSetting;
+import codex.renthyl.client.GraphSource;
 import codex.renthyl.debug.GraphEventCapture;
 import codex.renthyl.export.FrameGraphData;
 import codex.renthyl.export.ModuleGraphData;
@@ -46,7 +47,6 @@ import com.jme3.renderer.RenderManager;
 import com.jme3.renderer.RendererException;
 import com.jme3.renderer.pipeline.RenderPipeline;
 import com.jme3.renderer.ViewPort;
-import com.jme3.renderer.pipeline.PipelineContext;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.function.Function;
@@ -100,9 +100,8 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
     private final ResourceList resources;
     private final FGRenderContext context;
     private final HashMap<String, Object> settings = new HashMap<>();
-    private final IndexSupplier index = new IndexSupplier();
     private final LinkedList<RenderThread> orphanedThreads = new LinkedList<>();
-    private RenderContainer root;
+    private RenderThread root;
     private String name = "FrameGraph";
     private String docAsset = null;
     private boolean rendered = false;
@@ -119,6 +118,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
         this.assetManager = assetManager;
         this.resources = new ResourceList(this);
         this.context = new FGRenderContext(this);
+        this.root = new RenderThread(MainThreadIndexSource.INSTANCE);
     }
     /**
      * Creates a new framegraph from the given data.
@@ -174,8 +174,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
         if (!rendered) {
             resources.beginRenderFrame(pContext.getRenderObjects(), pContext.getEventCapture());
         }
-        index.reset();
-        root.updateModuleIndex(index);
+        root.updateModuleIndex(context, pContext.getThreadManager(), ModuleIndex.MAIN_THREAD);
         root.prepareModuleRender(context);
         resources.applyFutureReferences();
         
@@ -185,15 +184,12 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
         
         // execute
         context.pushRenderSettings();
-        //for (RenderThread t : threadExecutionStack) {
-        //    t.startThreadExecution(context);
-        //}
-        pContext.getThreadManager().start();
-        root.executeModuleRender(context);
-        for (RenderThread t : orphanedThreads) {
-            t.executeModuleRender(context);
-        }
-        orphanedThreads.clear();
+        pContext.getThreadManager().start(context);
+//        root.executeModuleRender(context);
+//        for (RenderThread t : orphanedThreads) {
+//            t.executeModuleRender(context);
+//        }
+//        orphanedThreads.clear();
         waitForActiveThreads(pContext.getThreadManager(), THREAD_WAIT_TIMEOUT);
         if (interrupted) {
             throw new RendererException("FrameGraph execution was interrupted.");
@@ -577,7 +573,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
      * @return 
      */
     public boolean isAsync() {
-        return index.getNumActiveThreads() > 1;
+        return context.getPipelineContext().getThreadManager().getNumAliveThreads() > 1;
     }
     /**
      * 
@@ -608,11 +604,14 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
      * @throws IllegalStateException if the tree root is already a member of a FrameGraph
      */
     public final FrameGraph applyData(ModuleGraphData data) {
-        root.cleanupModule();
-        root = data.getRootModule(RenderContainer.class);
-        if (root.isAssigned()) {
-            throw new IllegalStateException("Cannot apply tree root that is already a member of a FrameGraph.");
+        if (root != null) {
+            root.cleanupModule();
         }
+        root = data.getRootModule(RenderThread.class);
+        if (root.isAssigned()) {
+            throw new IllegalStateException("Cannot apply module root that is already a member of a FrameGraph.");
+        }
+        root.setThreadIndexSource(MainThreadIndexSource.INSTANCE);
         root.initializeModule(this);
         return this;
     }
@@ -679,6 +678,17 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
      */
     public final int getNextId() {
         return nextModuleId++;
+    }
+    
+    private static final class MainThreadIndexSource implements GraphSource<Integer> {
+
+        public static final MainThreadIndexSource INSTANCE = new MainThreadIndexSource();
+        
+        @Override
+        public Integer getGraphValue(FrameGraph frameGraph, ViewPort viewPort) {
+            return ModuleIndex.MAIN_THREAD;
+        }
+        
     }
     
 }

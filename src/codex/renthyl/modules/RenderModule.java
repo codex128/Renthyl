@@ -29,9 +29,9 @@
 package codex.renthyl.modules;
 
 import codex.renthyl.Connectable;
+import codex.renthyl.ExecutionThreadManager;
 import codex.renthyl.FGRenderContext;
 import codex.renthyl.FrameGraph;
-import codex.renthyl.IndexSupplier;
 import codex.renthyl.ModuleIndex;
 import codex.renthyl.ResourceTicket;
 import codex.renthyl.ResourceUser;
@@ -260,10 +260,12 @@ public abstract class RenderModule implements Connectable, ResourceUser, Savable
     /**
      * Updates this module's index from the supplier.
      * 
-     * @param supplier 
+     * @param context
+     * @param threadManager
+     * @param parentThread
      */
-    public void updateModuleIndex(IndexSupplier supplier) {
-        supplier.getNextInQueue(index);
+    public void updateModuleIndex(FGRenderContext context, ExecutionThreadManager threadManager, int parentThread) {
+        index.set(threadManager.add(this, parentThread));
     }
     /**
      * Executes this module.

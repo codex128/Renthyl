@@ -30,6 +30,7 @@ package codex.renthyl.tests;
 
 import codex.renthyl.FrameGraph;
 import codex.renthyl.FrameGraphFactory;
+import codex.renthyl.Renthyl;
 import codex.renthyl.modules.deferred.GBufferPass;
 import com.jme3.input.KeyInput;
 import com.jme3.input.controls.ActionListener;
@@ -50,7 +51,7 @@ public class TestGBuffer extends TestApplication {
     @Override
     protected void testInitApp() {
         
-        FrameGraph.initialize(this);
+        Renthyl.initialize(this);
         FrameGraph fg = FrameGraphFactory.Test.testGBuffer(assetManager);
         fg.setSetting("GBuffer", 0);
         viewPort.setPipeline(fg);

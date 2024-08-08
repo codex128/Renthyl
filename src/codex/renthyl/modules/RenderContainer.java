@@ -28,9 +28,9 @@
  */
 package codex.renthyl.modules;
 
+import codex.renthyl.ExecutionThreadManager;
 import codex.renthyl.FGRenderContext;
 import codex.renthyl.FrameGraph;
-import codex.renthyl.IndexSupplier;
 import com.jme3.export.InputCapsule;
 import com.jme3.export.JmeExporter;
 import com.jme3.export.JmeImporter;
@@ -63,10 +63,14 @@ public class RenderContainer <R extends RenderModule> extends RenderModule imple
         }
     }
     @Override
-    public void updateModuleIndex(IndexSupplier supplier) {
-        supplier.getNextInQueue(index);
+    public void updateModuleIndex(FGRenderContext context, ExecutionThreadManager threadManager, int parentThread) {
+        //supplier.getNextInQueue(index);
+        //for (RenderModule m : queue) {
+        //    m.updateModuleIndex(context, supplier);
+        //}
+        index.set(threadManager.add(this, parentThread));
         for (RenderModule m : queue) {
-            m.updateModuleIndex(supplier);
+            m.updateModuleIndex(context, threadManager, parentThread);
         }
     }
     @Override
