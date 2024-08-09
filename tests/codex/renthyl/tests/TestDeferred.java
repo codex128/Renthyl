@@ -63,7 +63,7 @@ public class TestDeferred extends TestApplication implements ActionListener {
         
         Renthyl.initialize(this);
         
-        fg = FrameGraphFactory.deferred(assetManager, false, false);
+        fg = FrameGraphFactory.deferred(assetManager);
         viewPort.setPipeline(fg);
         
         setupAll();

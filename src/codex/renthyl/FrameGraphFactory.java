@@ -84,13 +84,12 @@ public class FrameGraphFactory {
      * Constructs a deferred FrameGraph.
      * 
      * @param assetManager
-     * @param tiled true to enable tiled lighting
      * @return deferred framegraph
      */
-    public static FrameGraph deferred(AssetManager assetManager, boolean tiled) {
+    public static FrameGraph deferred(AssetManager assetManager) {
         
         FrameGraph fg = new FrameGraph(assetManager);
-        fg.setName(tiled ? "TiledDeferred" : "Deferred");
+        fg.setName("Deferred");
         
         GraphSetting<Integer> async = new GraphSetting<>("Async", 0);
         
@@ -119,14 +118,14 @@ public class FrameGraphFactory {
         GraphSetting<TiledRenderGrid> tileInfo = new GraphSetting<>("TileInfo", new TiledRenderGrid());
         tileInfoAttr.setSource(tileInfo);
         
-        GraphSetting<Integer> tileToggle = fg.setSetting("UseLightTiling", tiled ? 0 : -1, -1);
+        GraphSetting<Integer> tileToggle = new GraphSetting("UseLightTiling", -1);
         tileJunct1.makeInput(tileInfoAttr, Attribute.OUTPUT, Junction.getInput(0));
         tileJunct1.setIndexSource(tileToggle);
         
         lightImg.makeInput(enqueue, "OpaqueLights", "Lights");
         lightImg.makeInput(tileJunct1, Junction.getOutput(), "TileInfo");
         
-        GraphSetting<Integer> lightPackMethod = fg.setSetting("UseLightTextures", tiled ? 0 : -1, -1);
+        GraphSetting<Integer> lightPackMethod = new GraphSetting("UseLightTextures", -1);
         lightJunct.makeGroupInput(lightImg, "Textures", Junction.getInput(0), 0, 0, 3);
         lightJunct.makeInput(lightImg, "NumLights", Junction.getInput(0, 3));
         lightJunct.makeInput(lightImg, "Ambient", Junction.getInput(0, 4));

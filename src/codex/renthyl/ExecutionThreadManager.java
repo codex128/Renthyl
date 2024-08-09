@@ -8,6 +8,7 @@ import codex.renthyl.modules.RenderModule;
 import java.util.ArrayList;
 import java.util.ConcurrentModificationException;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -21,10 +22,10 @@ public class ExecutionThreadManager {
     private static final Logger LOG = Logger.getLogger(ExecutionThreadManager.class.getName());
     private static long timeout = 5000;
     
-    private final ArrayList<ThreadQueue> threads;
+    private final ArrayList<ThreadExecutor> threads;
     private FGRenderContext context;
-    private int aliveThreads = 0;
     private int activeThreads = 0;
+    private boolean error = false;
     
     /**
      * 
@@ -41,53 +42,14 @@ public class ExecutionThreadManager {
         threads = new ArrayList<>(threadsArrayLength);
     }
     
-    private ThreadQueue getThread(int i) {
-        if (i < 0) {
-            throw new IndexOutOfBoundsException("Thread index cannot be less than zero.");
+    public void start(FGRenderContext context, ExecutionQueueList queues) {
+        while (threads.size() < queues.size()) {
+            threads.add(new ThreadExecutor(threads.size()));
         }
-        while (i > threads.size()) {
-            threads.add(null);
-            i--;
-        }
-        if (i == threads.size()) {
-            ThreadQueue t = new ThreadQueue(i);
-            threads.add(t);
-            aliveThreads++;
-            return t;
-        }
-        ThreadQueue t = threads.get(i);
-        if (t == null) {
-            t = new ThreadQueue(i);
-            threads.set(i, t);
-            aliveThreads++;
-        }
-        return t;
-    }
-    
-    /**
-     * Adds the Runnable to the thread at the index.
-     * <p>
-     * If the index is greater than the number of threads, a new thread
-     * will be created.
-     * 
-     * @param module
-     * @param index 
-     * @return  
-     */
-    public ModuleIndex add(RenderModule module, int index) {
-        return getThread(index).add(module);
-    }
-    
-    /**
-     * Starts all queues.
-     * @param context
-     */
-    public void start(FGRenderContext context) {
-        this.context = context;
-        for (int i = threads.size()-1; i >= 0; i--) {
-            ThreadQueue t = threads.get(i);
-            if (t != null && t.start(i == 0)) {
-                activeThreads++;
+        for (int i = queues.size(); i >= 0; i--) {
+            List<RenderModule> q = queues.getQueue(i);
+            if (q != null) {
+                threads.get(i).start(q);
             }
         }
     }
@@ -95,39 +57,22 @@ public class ExecutionThreadManager {
     /**
      * Flushes all threads that have not been used.
      */
-    public void flush() {
+    public void stop() {
         for (int i = 0; i < threads.size(); i++) {
-            ThreadQueue t = threads.get(i);
-            if (t != null && !t.flush()) {
-                threads.set(i, null);
-                aliveThreads--;
-            }
-        }
-    }
-    
-    /**
-     * Terminates all threads.
-     * @param force
-     */
-    public void terminateAll(boolean force) {
-        for (ThreadQueue t : threads) {
+            ThreadExecutor t = threads.get(i);
             if (t != null) {
-                t.terminate(force);
+                t.stop();
             }
         }
-        threads.clear();
-        aliveThreads = 0;
-        activeThreads = 0;
     }
     
     /**
-     * Gets the number of threads that are alive but not
-     * necessarily running.
-     * 
-     * @return 
+     * Indicates that an error has occured and execution
+     * should be interrupted.
      */
-    public int getNumAliveThreads() {
-        return aliveThreads;
+    public void error() {
+        error = true;
+        threads.clear();
     }
     
     /**
@@ -137,6 +82,15 @@ public class ExecutionThreadManager {
      */
     public int getNumActiveThreads() {
         return activeThreads;
+    }
+    
+    /**
+     * Returns true if an error occured during execution.
+     * 
+     * @return 
+     */
+    public boolean didErrorOccur() {
+        return error;
     }
     
     /**
@@ -159,71 +113,54 @@ public class ExecutionThreadManager {
         return timeout;
     }
     
-    private class ThreadQueue implements Runnable {
+    private class ThreadExecutor implements Runnable {
         
-        private final ModuleIndex index;
-        private final LinkedList<RenderModule> queue = new LinkedList<>();
+        private final int index;
+        private List<RenderModule> queue;
         private Thread thread;
         private boolean run = false;
-        private boolean interrupt = false;
-        private boolean used = false;
         
-        public ThreadQueue(int index) {
-            this.index = new ModuleIndex(index, -1);
+        public ThreadExecutor(int index) {
+            this.index = index;
         }
         
         @Override
         public void run() {
             while (true) {
-                for (RenderModule r : queue) {
-                    r.executeModuleRender(context);
-                    if (interrupt) {
-                        break;
+                try {
+                    for (RenderModule r : queue) {
+                        if (error) {
+                            break;
+                        }
+                        r.executeModuleRender(context);
                     }
+                } catch (Exception ex) {
+                    LOG.log(Level.SEVERE, "An exception occured while executing thread "+index, ex);
+                    error();
                 }
-                queue.clear();
                 run = false;
                 activeThreads--;
                 long start = System.currentTimeMillis();
-                while (!run && thread != null && !interrupt) {
+                while (!run && !error && thread != null) {
                     if (System.currentTimeMillis()-start >= timeout) {
                         LOG.log(Level.WARNING, "Execution thread timed out after {0} milliseconds.", timeout);
                         thread = null;
                     }
                 }
-                if (thread == null || interrupt) {
-                    interrupt = false;
+                if (thread == null || error) {
                     thread = null;
                     break;
                 }
             }
         }
         
-        /**
-         * Adds the Runnable to the execution queue.
-         * 
-         * @param module 
-         */
-        public ModuleIndex add(RenderModule module) {
-            if (run) {
-                throw new ConcurrentModificationException("Cannot add to queue while executing.");
-            }
-            index.setQueueIndex(queue.size());
-            queue.add(module);
-            return index;
-        }
-        
-        /**
-         * Starts executing the queue if the queue is not empty.
-         * 
-         * @param local run on the local thread
-         * @return 
-         */
-        public boolean start(boolean local) {
+        public boolean start(List<RenderModule> queue) {
+            assert queue != null : "Queue cannot be null";
+            this.queue = queue;
             if (!queue.isEmpty()) {
                 run = true;
-                used = true;
-                if (local) {
+                activeThreads++;
+                if (index == 0) {
                     run();
                 } else if (thread == null) {
                     thread = new Thread(this);
@@ -234,37 +171,11 @@ public class ExecutionThreadManager {
             return false;
         }
         
-        /**
-         * Terminates the thread when execution has finished.
-         * 
-         * @param force forcibly interrupts the thread without waiting for the queue it finish
-         */
-        public void terminate(boolean force) {
-            if (force && run && thread != null) {
-                thread.interrupt();
+        public void stop() {
+            if (queue == null) {
+                thread = null;
             }
-            thread = null;
-            interrupt = true;
-        }
-        
-        /**
-         * Returns true if this thread has been used since
-         * the last flush call.
-         * 
-         * @return 
-         */
-        public boolean flush() {
-            if (used) return !(used = false);
-            else return used;
-        }
-        
-        /**
-         * Returns true if the queue is empty.
-         * 
-         * @return 
-         */
-        public boolean isEmpty() {
-            return queue.isEmpty();
+            queue = null;
         }
         
     }

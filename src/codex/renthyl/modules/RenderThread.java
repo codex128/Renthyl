@@ -28,7 +28,7 @@
  */
 package codex.renthyl.modules;
 
-import codex.renthyl.ExecutionThreadManager;
+import codex.renthyl.ExecutionQueueList;
 import codex.renthyl.FGRenderContext;
 import codex.renthyl.FrameGraph;
 import codex.renthyl.client.GraphSource;
@@ -38,19 +38,14 @@ import com.jme3.export.JmeImporter;
 import com.jme3.export.OutputCapsule;
 import com.jme3.export.SavableObject;
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
- * Executes queued modules on another thread.
+ * Executes child modules on particular thread.
  * 
  * @author codex
  */
-public class RenderThread extends RenderContainer<RenderModule> implements Runnable {
+public class RenderThread extends RenderContainer<RenderModule> {
     
-    private static final Logger LOG = Logger.getLogger(RenderThread.class.getName());
-    
-    private FGRenderContext context;
     private GraphSource<Integer> threadIndexSource;
     
     public RenderThread() {}
@@ -59,50 +54,17 @@ public class RenderThread extends RenderContainer<RenderModule> implements Runna
     }
     
     @Override
-    public void run() {
-        while (true) {
-            try {
-                for (RenderModule m : queue) {
-                    if (isInterrupted()) break;
-                    m.executeModuleRender(context);
-                }
-            } catch (Exception ex) {
-                LOG.log(Level.SEVERE, "An exception occured while executing RenderThread at index "+index.threadIndex+'.', ex);
-                frameGraph.interruptRendering();
-            }
-        }
-    }
-    @Override
-    public void updateModuleIndex(FGRenderContext context, ExecutionThreadManager threadManager, int parentThread) {
+    public void queueModule(FGRenderContext context, ExecutionQueueList queues, int parentThread) {
         @SuppressWarnings("null")
         int i = threadIndexSource != null ?
                 threadIndexSource.getGraphValue(frameGraph, context.getViewPort())
                 : parentThread;
         if (i < 0) i = parentThread;
-        index.set(threadManager.add(this, i));
+        index.set(queues.add(this, i));
         for (RenderModule m : queue) {
-            m.updateModuleIndex(context, threadManager, i);
+            m.queueModule(context, queues, i);
         }
     }
-    @Override
-    public void prepareModuleRender(FGRenderContext context) {
-        super.prepareModuleRender(context);
-        if (!queue.isEmpty() && isOrphaned()) {
-            if (index.threadIndex > 0) {
-                context.getPipelineContext().getThreadManager().add(this, index.threadIndex-1);
-            } else {
-                frameGraph.registerOrphanedMainThread(this);
-            }
-        }
-    }
-    @Override
-    public void executeModuleRender(FGRenderContext context) {
-        if (!isOrphaned()) {
-            super.executeModuleRender(context);
-        }
-    }
-    @Override
-    public void cleanupModule(FrameGraph frameGraph) {}
     @Override
     public void write(JmeExporter ex) throws IOException {
         super.write(ex);
@@ -119,7 +81,8 @@ public class RenderThread extends RenderContainer<RenderModule> implements Runna
     /**
      * Sets the source for the thread index.
      * <p>
-     * Negative indices will make this run on the next unclaimed thread.
+     * Negative indices will make this run on the same thread
+     * as its parent.
      * 
      * @param threadIndexSource 
      */

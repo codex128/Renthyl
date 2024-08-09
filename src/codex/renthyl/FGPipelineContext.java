@@ -68,7 +68,7 @@ public class FGPipelineContext extends AbstractPipelineContext {
             eventCapture.endRenderFrame();
         }
         renderObjects.flushMap();
-        threadManager.flush();
+        threadManager.stop();
         if (eventCapture != null && eventCapture.isComplete()) {
             try {
                 eventCapture.export();
@@ -83,8 +83,8 @@ public class FGPipelineContext extends AbstractPipelineContext {
         this.eventCapture = eventCapture;
     }
     
-    public void appStopped() {
-        threadManager.terminateAll(true);
+    public void applicationStopped() {
+        threadManager.stop();
     }
     
     public RenderObjectMap getRenderObjects() {

@@ -53,7 +53,15 @@ public class TicketGroup <T> {
         this.name = name;
         this.array = new ResourceTicket[length];
     }
-
+    
+    /**
+     * Creates a ticket for this group.
+     * <p>
+     * The created ticket is not added to the group.
+     * 
+     * @param i
+     * @return 
+     */
     public ResourceTicket<T> create(int i) {
         String tName;
         if (!list) {
@@ -63,18 +71,35 @@ public class TicketGroup <T> {
         }
         return new ResourceTicket<>(tName);
     }
-
+    
+    /**
+     * Adds a new ticket to this group.
+     * 
+     * @return added ticket
+     */
     public ResourceTicket<T> add() {
         ResourceTicket[] temp = new ResourceTicket[array.length+1];
         System.arraycopy(array, 0, temp, 0, array.length);
         array = temp;
         return (array[array.length-1] = create(array.length-1));
     }
+    
+    /**
+     * Removes the given ticket from this group.
+     * <p>
+     * Requires the group be a list.
+     * 
+     * @param t ticket to remove
+     * @return index of the removed ticket, or -1 if the ticket was not a member
+     * of this group
+     */
     public int remove(ResourceTicket t) {
         requireAsList(true);
         int i = array.length-1;
         for (; i >= 0; i--) {
-            if (array[i] == t) break;
+            if (array[i] == t) {
+                break;
+            }
         }
         if (i >= 0) {
             ResourceTicket[] temp = new ResourceTicket[array.length-1];
@@ -88,19 +113,73 @@ public class TicketGroup <T> {
         }
         return i;
     }
+    
+    /**
+     * Removes all tickets in this group that have the given ticket
+     * as their source.
+     * 
+     * @param source 
+     * @return number of tickets removed
+     */
+    public int removeSource(ResourceTicket source) {
+        int n = 0;
+        for (int i = 0; i < array.length; i++) {
+            ResourceTicket t = array[i];
+            if (t.getSource() == source) {
+                t.setSource(null);
+                if (list) {
+                    array[i] = null;
+                }
+                n++;
+            }
+        }
+        if (list) {
+            ResourceTicket[] temp = new ResourceTicket[array.length-n];
+            for (int i = 0, j = 0; i < temp.length; i++) {
+                ResourceTicket t;
+                while ((t = array[j++]) == null) {}
+                temp[i] = t;
+            }
+            array = temp;
+        }
+        return n;
+    }
 
+    /**
+     * Requires this group as either a list or an array.
+     * 
+     * @param list 
+     * @throws IllegalStateException if expected state is not true
+     */
     public void requireAsList(boolean list) {
         if (this.list != list) {
             throw new IllegalStateException("Group must be "+(list ? "a list" : "an array")+" in this context.");
         }
     }
     
+    /**
+     * Gets the name of this group.
+     * 
+     * @return 
+     */
     public String getName() {
         return name;
     }
+    
+    /**
+     * Gets the ticket array.
+     * 
+     * @return 
+     */
     public ResourceTicket<T>[] getArray() {
         return array;
     }
+    
+    /**
+     * Returns true if this group is a list.
+     * 
+     * @return 
+     */
     public boolean isList() {
         return list;
     }
@@ -114,6 +193,7 @@ public class TicketGroup <T> {
     public static String arrayTicketName(String group, int i) {
         return group+'['+i+']';
     }
+    
     /**
      * 
      * @param group
@@ -122,6 +202,7 @@ public class TicketGroup <T> {
     public static String listTicketName(String group) {
         return LIST+group;
     }
+    
     /**
      * 
      * @param name
@@ -130,6 +211,7 @@ public class TicketGroup <T> {
     public static boolean isListTicket(String name) {
         return name.startsWith(LIST);
     }
+    
     /**
      * 
      * @param name

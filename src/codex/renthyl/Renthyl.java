@@ -42,7 +42,7 @@ public class Renthyl {
         protected void initialize(Application app) {}
         @Override
         protected void cleanup(Application app) {
-            context.appStopped();
+            context.applicationStopped();
         }
         @Override
         protected void onEnable() {}

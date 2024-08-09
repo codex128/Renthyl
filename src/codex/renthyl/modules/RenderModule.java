@@ -29,7 +29,7 @@
 package codex.renthyl.modules;
 
 import codex.renthyl.Connectable;
-import codex.renthyl.ExecutionThreadManager;
+import codex.renthyl.ExecutionQueueList;
 import codex.renthyl.FGRenderContext;
 import codex.renthyl.FrameGraph;
 import codex.renthyl.ModuleIndex;
@@ -60,7 +60,6 @@ public abstract class RenderModule implements Connectable, ResourceUser, Savable
     protected final LinkedList<ResourceTicket> inputs = new LinkedList<>();
     protected final LinkedList<ResourceTicket> outputs = new LinkedList<>();
     protected final HashMap<String, TicketGroup> groups = new HashMap<>();
-    private boolean interrupted = false;
     private int refs = 0;
     private int id = -1;
     
@@ -116,10 +115,16 @@ public abstract class RenderModule implements Connectable, ResourceUser, Savable
         return groups.get(name);
     }
     @Override
-    public ResourceTicket addListEntry(String groupName) {
+    public ResourceTicket addTicketListEntry(String groupName) {
         TicketGroup g = getGroup(name, true);
         g.requireAsList(true);
         return addInput(g.add());
+    }
+    @Override
+    public void setLayoutUpdateNeeded() {
+        if (isAssigned()) {
+            frameGraph.setLayoutUpdateNeeded();
+        }
     }
     
     public int getId() {
@@ -237,13 +242,6 @@ public abstract class RenderModule implements Connectable, ResourceUser, Savable
     }
     
     /**
-     * Interrupts execution of this module.
-     */
-    public void interrupt() {
-        interrupted = true;
-    }
-    
-    /**
      * Initializes this module to the FrameGraph.
      * 
      * @param frameGraph 
@@ -254,6 +252,7 @@ public abstract class RenderModule implements Connectable, ResourceUser, Savable
             throw new IllegalStateException("Module already initialized.");
         }
         this.frameGraph = frameGraph;
+        this.frameGraph.setLayoutUpdateNeeded();
         id = this.frameGraph.getNextId();
         initModule(this.frameGraph);
     }
@@ -261,11 +260,11 @@ public abstract class RenderModule implements Connectable, ResourceUser, Savable
      * Updates this module's index from the supplier.
      * 
      * @param context
-     * @param threadManager
+     * @param queues
      * @param parentThread
      */
-    public void updateModuleIndex(FGRenderContext context, ExecutionThreadManager threadManager, int parentThread) {
-        index.set(threadManager.add(this, parentThread));
+    public void queueModule(FGRenderContext context, ExecutionQueueList queues, int parentThread) {
+        index.set(queues.add(this, parentThread));
     }
     /**
      * Executes this module.
@@ -293,6 +292,13 @@ public abstract class RenderModule implements Connectable, ResourceUser, Savable
         id = -1;
         if (frameGraph != null) {
             cleanupModule(frameGraph);
+            for (ResourceTicket t : inputs) {
+                t.setSource(null);
+            }
+            for (ResourceTicket t : outputs) {
+                t.clearAllTargets();
+            }
+            frameGraph.setLayoutUpdateNeeded();
             frameGraph = null;
         }
     }
@@ -357,7 +363,49 @@ public abstract class RenderModule implements Connectable, ResourceUser, Savable
      * @param name 
      */
     public void setName(String name) {
+        assert name != null : "Name cannot be null.";
+        assert !name.isEmpty() : "Name cannot be an empty string.";
         this.name = name;
+    }
+    /**
+     * Sets the name of this module.
+     * 
+     * @param name
+     * @param preserveProjectName if true, the project name appended to the
+     * current name (if any) will be preserved into the resulting name.
+     */
+    public void setName(String name, boolean preserveProjectName) {
+        if (preserveProjectName) {
+            String[] array = this.name.split(":", 2);
+            if (array.length > 1) {
+                setName(array[0]+":"+name);
+                return;
+            }
+        }
+        setName(name);
+    }
+    /**
+     * Appends the project name to the beginning of the current name.
+     * <p>
+     * The resulting name is formatted as {@code "[projectName]:[currentName]"}.
+     * If the current name already has a project name appended (denoted by ':'),
+     * the given project name will override that.
+     * <p>
+     * This can be used to ensure that modules between "projects" included in
+     * the framegraph do not have duplicate names. For example, if importing
+     * a bloom effect project, set the project name to "Bloom" so that modules
+     * in the project can be referenced without fear of accidentally referencing
+     * something else.
+     * 
+     * @param projectName 
+     */
+    public void appendProjectName(String projectName) {
+        String[] array = name.split(":", 2);
+        if (array.length == 1) {
+            setName(projectName+":"+name);
+        } else {
+            setName(projectName+":"+array[1]);
+        }
     }
     /**
      * Sets the parent of this module.
@@ -378,6 +426,19 @@ public abstract class RenderModule implements Connectable, ResourceUser, Savable
         return name;
     }
     /**
+     * Gets the project name appended to the current name, if any.
+     * 
+     * @return project name, or null
+     */
+    public String getProjectName() {
+        String[] array = name.split(":");
+        if (array.length > 1) {
+            return array[0];
+        } else {
+            return null;
+        }
+    }
+    /**
      * 
      * @return 
      */
@@ -391,14 +452,6 @@ public abstract class RenderModule implements Connectable, ResourceUser, Savable
      */
     public boolean isAssigned() {
         return frameGraph != null;
-    }
-    /**
-     * Returns true if this module's execution has been interrupted.
-     * 
-     * @return 
-     */
-    public boolean isInterrupted() {
-        return interrupted;
     }
     /**
      * Returns true if this module runs on a thread other than the main thread.

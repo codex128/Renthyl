@@ -46,6 +46,7 @@ public class ResourceTicket <T> {
     
     public static final String RESERVED = "#";
     
+    private final Connectable user;
     private String name;
     private int localIndex;
     private long objectId = -1;
@@ -53,27 +54,23 @@ public class ResourceTicket <T> {
     private final LinkedList<ResourceTicket<T>> targets = new LinkedList<>();
     private int exportGroupId = -1;
     
-    /**
-     * 
-     */
     public ResourceTicket() {
-        this(null, -1);
+        this(null, null, -1);
     }
-    /**
-     * Creates a ticket with the name and a negative local index.
-     * 
-     * @param name 
-     */
     public ResourceTicket(String name) {
-        this(name, -1);
+        this(null, name, -1);
     }
-    /**
-     * Creates a ticket with the name and local index.
-     * 
-     * @param name
-     * @param index 
-     */
     public ResourceTicket(String name, int index) {
+        this(null, name, index);
+    }
+    public ResourceTicket(Connectable user) {
+        this(user, null, -1);
+    }
+    public ResourceTicket(Connectable user, String name) {
+        this(user, name, -1);
+    }
+    public ResourceTicket(Connectable user, String name, int index) {
+        this.user = user;
         this.name = name;
         this.localIndex = index;
     }
@@ -120,12 +117,17 @@ public class ResourceTicket <T> {
      * @param source 
      */
     public void setSource(ResourceTicket<T> source) {
-        if (this.source != null) {
-            this.source.targets.remove(this);
-        }
-        this.source = source;
-        if (this.source != null) {
-            this.source.targets.add(this);
+        if (this.source != source) {
+            if (this.source != null) {
+                this.source.targets.remove(this);
+            }
+            if (user != null) {
+                user.setLayoutUpdateNeeded();
+            }
+            this.source = source;
+            if (this.source != null) {
+                this.source.targets.add(this);
+            }
         }
     }
     /**
@@ -170,6 +172,14 @@ public class ResourceTicket <T> {
         this.exportGroupId = exportGroupId;
     }
     
+    /**
+     * Gets the user (owner) of this ticket.
+     * 
+     * @return user (may be null)
+     */
+    public Connectable getUser() {
+        return user;
+    }
     /**
      * 
      * @return 

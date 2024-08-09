@@ -38,6 +38,7 @@ import com.jme3.export.JmeImporter;
 import com.jme3.export.NullSavable;
 import com.jme3.export.OutputCapsule;
 import com.jme3.export.Savable;
+import com.jme3.export.SavableObject;
 import java.io.IOException;
 
 /**
@@ -61,6 +62,7 @@ public class Junction <T> extends RenderPass {
     private ResourceTicket<T> output;
     private GraphSource<Integer> source;
     private int defaultIndex = 0;
+    private int curIndex = -1;
     
     public Junction() {
         this(2);
@@ -112,9 +114,7 @@ public class Junction <T> extends RenderPass {
         out.write(length, "length", 2);
         out.write(groupSize, "groupSize", 1);
         out.write(defaultIndex, "defaultIndex", 0);
-        if (source != null && source instanceof Savable) {
-            out.write((Savable)source, "source", NullSavable.INSTANCE);
-        }
+        out.write(new SavableObject(source, true), "source", SavableObject.NULL);
     }
     @Override
     public void read(JmeImporter im) throws IOException {
@@ -123,11 +123,15 @@ public class Junction <T> extends RenderPass {
         length = in.readInt("length", 2);
         groupSize = in.readInt("groupSize", 1);
         defaultIndex = in.readInt("defaultIndex", 0);
-        source = (GraphSource<Integer>)in.readSavable("source", null);
+        source = in.readSavableObject("source", GraphSource.class);
     }
     
     private void connect(int i) {
         boolean assignNull = i < 0 || i >= length;
+        if (i != curIndex) {
+            frameGraph.setLayoutUpdateNeeded();
+            curIndex = i;
+        }
         if (groupSize > 1) {
             ResourceTicket[] outArray = getGroupArray(getOutput());
             if (!assignNull) {

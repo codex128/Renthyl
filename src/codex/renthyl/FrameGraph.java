@@ -98,15 +98,16 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
     
     private final AssetManager assetManager;
     private final ResourceList resources;
+    private final ExecutionQueueList executionQueues;
     private final FGRenderContext context;
     private final HashMap<String, Object> settings = new HashMap<>();
-    private final LinkedList<RenderThread> orphanedThreads = new LinkedList<>();
     private RenderThread root;
     private String name = "FrameGraph";
     private String docAsset = null;
+    private boolean dynamic = false;
+    private boolean layoutUpdateNeeded = true;
     private boolean rendered = false;
     private boolean debugPrint = false;
-    private boolean interrupted = false;
     private int nextModuleId = 0;
     
     /**
@@ -117,8 +118,10 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
     public FrameGraph(AssetManager assetManager) {
         this.assetManager = assetManager;
         this.resources = new ResourceList(this);
+        this.executionQueues = new ExecutionQueueList();
         this.context = new FGRenderContext(this);
         this.root = new RenderThread(MainThreadIndexSource.INSTANCE);
+        this.root.initializeModule(this);
     }
     /**
      * Creates a new framegraph from the given data.
@@ -160,43 +163,45 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
     @Override
     public void pipelineRender(RenderManager rm, FGPipelineContext pContext, ViewPort vp, float tpf) {
         
-        if (interrupted) {
-            throw new IllegalStateException("Cannot render because FrameGraph crashed.");
+        boolean updateNeeded = dynamic || layoutUpdateNeeded;
+        ExecutionThreadManager threadManager = pContext.getThreadManager();
+        GraphEventCapture cap = context.getGraphCapture();
+        if (threadManager.didErrorOccur()) {
+            return;
         }
         
         // prepare
         rm.applyViewPort(vp);
         context.target(rm, pContext, vp, tpf);
-        GraphEventCapture cap = context.getGraphCapture();
         if (cap != null) {
             cap.renderViewPort(context.getViewPort());
         }
         if (!rendered) {
             resources.beginRenderFrame(pContext.getRenderObjects(), pContext.getEventCapture());
         }
-        root.updateModuleIndex(context, pContext.getThreadManager(), ModuleIndex.MAIN_THREAD);
+        if (updateNeeded) {
+            executionQueues.flush();
+            root.queueModule(context, executionQueues, ModuleIndex.MAIN_THREAD);
+        }
         root.prepareModuleRender(context);
         resources.applyFutureReferences();
         
         // cull modules and resources
-        root.countReferences();
-        resources.cullUnreferenced();
+        if (updateNeeded) {
+            root.countReferences();
+            resources.cullUnreferenced();
+            layoutUpdateNeeded = false;
+        }
         
         // execute
         context.pushRenderSettings();
-        pContext.getThreadManager().start(context);
-//        root.executeModuleRender(context);
-//        for (RenderThread t : orphanedThreads) {
-//            t.executeModuleRender(context);
-//        }
-//        orphanedThreads.clear();
+        threadManager.start(context, executionQueues);
         waitForActiveThreads(pContext.getThreadManager(), THREAD_WAIT_TIMEOUT);
-        if (interrupted) {
-            throw new RendererException("FrameGraph execution was interrupted.");
+        if (threadManager.didErrorOccur()) {
+            throw new RendererException("FrameGraph render incomplete.");
         }
         
         // reset
-        orphanedThreads.clear();
         context.popFrameBuffer();
         root.resetModuleRender(context);
         pContext.getRenderObjects().clearReservations();
@@ -260,6 +265,40 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
      */
     public <T extends RenderModule> T add(T module, int index) {
         root.add(module, index);
+        return module;
+    }
+    /**
+     * Adds the pass to end of the {@link PassThread} running on the main render thread.
+     * 
+     * @param <T>
+     * @param module
+     * @param name name to be assigned to the module
+     * @return given pass
+     */
+    public <T extends RenderModule> T add(T module, String name) {
+        root.add(module);
+        module.setName(name);
+        return module;
+    }
+    /**
+     * Adds the pass at the index.
+     * <p>
+     * If the thread index is &gt;= the total number of {@link PassThreads}s,
+     * a new PassThread will be created for this to be added to.
+     * <p>
+     * If the queue index is &gt;= the current queue size, the pass will
+     * be added to the end of the queue. Passes above the added pass
+     * will have their indexes shifted.
+     * 
+     * @param <T>
+     * @param module
+     * @param index
+     * @param name name to be assigned to the module
+     * @return 
+     */
+    public <T extends RenderModule> T add(T module, int index, String name) {
+        root.add(module, index);
+        module.setName(name);
         return module;
     }
     
@@ -442,12 +481,31 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
     }
     
     /**
+     * Indicates that the layout of the framegraph has changed and
+     * an update is necessary before rendering.
+     */
+    public void setLayoutUpdateNeeded() {
+        layoutUpdateNeeded = true;
+    }
+    
+    /**
      * Sets the name of this FrameGraph.
      * 
      * @param name 
      */
     public void setName(String name) {
         this.name = name;
+    }
+    /**
+     * Sets layout updates as dynamic, so specifically setting
+     * an update flag is not necessary.
+     * <p>
+     * default=false
+     * 
+     * @param dynamic 
+     */
+    public void setDynamic(boolean dynamic) {
+        this.dynamic = dynamic;
     }
     /**
      * Sets the asset path corresponding to a documentation file for
@@ -485,26 +543,6 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
      */
     public void enableDebugPrint(boolean debugPrint) {
         this.debugPrint = debugPrint;
-    }
-    
-    /**
-     * Registers a RenderThread that executes on JME's main thread but
-     * whose parent does not.
-     * 
-     * @param thread 
-     */
-    public void registerOrphanedMainThread(RenderThread thread) {
-        orphanedThreads.add(thread);
-    }
-    /**
-     * Called automatically when a rendering exception occurs.
-     */
-    public void interruptRendering() {
-        if (!interrupted) {
-            interrupted = true;
-            context.getPipelineContext().getThreadManager().terminateAll(false);
-            root.interrupt();
-        }
     }
     
     public RenderContainer getRoot() {
@@ -568,12 +606,26 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
         return docAsset;
     }
     /**
+     * 
+     * @return 
+     */
+    public boolean isDynamic() {
+        return dynamic;
+    }
+    /**
+     * 
+     * @return 
+     */
+    public boolean isLayoutUpdateNeeded() {
+        return layoutUpdateNeeded;
+    }
+    /**
      * Returns true if this framegraph is running asynchronous {@link PassThread}s.
      * 
      * @return 
      */
     public boolean isAsync() {
-        return context.getPipelineContext().getThreadManager().getNumAliveThreads() > 1;
+        return executionQueues.getNumActiveQueues() > 1;
     }
     /**
      * 
@@ -613,6 +665,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
         }
         root.setThreadIndexSource(MainThreadIndexSource.INSTANCE);
         root.initializeModule(this);
+        setLayoutUpdateNeeded();
         return this;
     }
     /**
