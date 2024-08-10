@@ -29,9 +29,9 @@
 package codex.renthyl.tests;
 
 import codex.renthyl.FrameGraph;
-import codex.renthyl.FrameGraphFactory;
+import codex.renthylplus.FrameGraphFactory;
 import codex.renthyl.Renthyl;
-import codex.renthyl.modules.deferred.GBufferPass;
+import codex.renthylplus.deferred.GBufferPass;
 import com.jme3.input.KeyInput;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;

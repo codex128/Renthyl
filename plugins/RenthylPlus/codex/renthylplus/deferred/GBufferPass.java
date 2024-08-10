@@ -26,7 +26,7 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package codex.renthyl.modules.deferred;
+package codex.renthylplus.deferred;
 
 import codex.renthyl.FGRenderContext;
 import codex.renthyl.FrameGraph;

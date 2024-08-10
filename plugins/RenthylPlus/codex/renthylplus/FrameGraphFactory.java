@@ -26,17 +26,18 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package codex.renthyl;
+package codex.renthylplus;
 
+import codex.renthyl.FrameGraph;
 import codex.renthyl.modules.Attribute;
 import codex.renthyl.modules.OutputPass;
 import codex.renthyl.modules.Junction;
 import codex.renthyl.modules.geometry.SceneEnqueuePass;
 import codex.renthyl.modules.geometry.QueueMergePass;
 import codex.renthyl.modules.geometry.OutputGeometryPass;
-import codex.renthyl.modules.deferred.GBufferPass;
-import codex.renthyl.modules.deferred.DeferredPass;
-import codex.renthyl.modules.light.LightImagePass;
+import codex.renthylplus.deferred.GBufferPass;
+import codex.renthylplus.deferred.DeferredPass;
+import codex.renthylplus.light.LightImagePass;
 import codex.renthyl.client.GraphSetting;
 import codex.renthyl.light.TiledRenderGrid;
 import codex.renthyl.modules.RenderContainer;

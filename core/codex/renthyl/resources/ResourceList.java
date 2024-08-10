@@ -30,8 +30,6 @@ package codex.renthyl.resources;
 
 import codex.renthyl.FrameGraph;
 import codex.renthyl.modules.ModuleIndex;
-import codex.renthyl.resources.RenderObjectMap;
-import codex.renthyl.resources.RenderObject;
 import codex.renthyl.debug.GraphEventCapture;
 import codex.renthyl.definitions.ResourceDef;
 import com.jme3.texture.FrameBuffer;
@@ -751,7 +749,7 @@ public class ResourceList {
      * 
      * @return 
      */
-    public int getTextureBinds() {
+    public int getNumTextureBinds() {
         return textureBinds;
     }
     

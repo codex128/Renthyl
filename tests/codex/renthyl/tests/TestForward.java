@@ -29,7 +29,7 @@
 package codex.renthyl.tests;
 
 import codex.renthyl.FrameGraph;
-import codex.renthyl.FrameGraphFactory;
+import codex.renthylplus.FrameGraphFactory;
 import codex.renthyl.Renthyl;
 
 /**
