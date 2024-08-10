@@ -1,0 +1,16 @@
+Technique GBufferPass {
+    
+    VertexShader   GLSL300 GLSL150 GLSL100 : Common/MatDefs/Terrain/HeightBasedTerrain.vert
+    FragmentShader GLSL300 GLSL150 GLSL100 : RenthylPlus/MatDefs/GBuffer/HeightBasedTerrain.frag
+
+    WorldParameters {
+        WorldViewProjectionMatrix
+        WorldMatrix
+        NormalMatrix
+    }
+
+    Defines {
+        BOUND_DRAW_BUFFER: BoundDrawBuffer
+    }
+    
+}

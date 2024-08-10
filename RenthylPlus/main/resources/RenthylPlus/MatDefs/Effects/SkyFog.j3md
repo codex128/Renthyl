@@ -1,0 +1,26 @@
+MaterialDef SkyFog {
+
+    MaterialParameters {
+        Texture2D ColorMap
+        Texture2D DepthMap
+        Texture2D FogMap
+        Color FogColor
+        Float Density : 0.7
+        Float Distance : 1000
+    }
+
+    Technique {
+    
+        VertexShader   GLSL300 GLSL150 GLSL100 : RenthylPlus/MatDefs/Fullscreen/Screen.vert
+        FragmentShader GLSL300 GLSL150 GLSL100 : RenthylPlus/MatDefs/Effects/SkyFog.frag
+
+        WorldParameters {
+        }
+
+        Defines {
+            FOG_MAP : FogMap
+        }
+        
+    }
+
+}
