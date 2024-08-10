@@ -29,7 +29,7 @@
 package codex.renthyl.resources;
 
 import codex.renthyl.FGPipelineContext;
-import codex.renthyl.ModuleIndex;
+import codex.renthyl.modules.ModuleIndex;
 import codex.renthyl.debug.GraphEventCapture;
 import codex.renthyl.definitions.ResourceDef;
 import java.util.Iterator;

@@ -28,6 +28,7 @@
  */
 package codex.renthyl;
 
+import codex.renthyl.resources.TicketGroup;
 import codex.renthyl.resources.ResourceTicket;
 
 /**

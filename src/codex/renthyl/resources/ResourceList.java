@@ -29,7 +29,7 @@
 package codex.renthyl.resources;
 
 import codex.renthyl.FrameGraph;
-import codex.renthyl.ModuleIndex;
+import codex.renthyl.modules.ModuleIndex;
 import codex.renthyl.resources.RenderObjectMap;
 import codex.renthyl.resources.RenderObject;
 import codex.renthyl.debug.GraphEventCapture;

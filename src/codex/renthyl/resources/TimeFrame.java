@@ -26,7 +26,9 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package codex.renthyl;
+package codex.renthyl.resources;
+
+import codex.renthyl.modules.ModuleIndex;
 
 /**
  * Represents a period of time starting at the start of the indexed pass, and

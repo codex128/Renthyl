@@ -28,7 +28,7 @@
  */
 package codex.renthyl.resources;
 
-import codex.renthyl.ModuleIndex;
+import codex.renthyl.modules.ModuleIndex;
 import java.util.LinkedList;
 import java.util.List;
 

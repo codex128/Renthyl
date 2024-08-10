@@ -28,8 +28,7 @@
  */
 package codex.renthyl.resources;
 
-import codex.renthyl.ModuleIndex;
-import codex.renthyl.TimeFrame;
+import codex.renthyl.modules.ModuleIndex;
 import codex.renthyl.definitions.ResourceDef;
 import com.jme3.util.NativeObject;
 import java.util.LinkedList;

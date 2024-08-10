@@ -28,6 +28,7 @@
  */
 package codex.renthyl;
 
+import codex.renthyl.modules.ModuleIndex;
 import codex.renthyl.resources.ResourceList;
 import codex.renthyl.asset.FrameGraphKey;
 import codex.renthyl.client.GraphSetting;

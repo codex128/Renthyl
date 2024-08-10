@@ -28,7 +28,7 @@
  */
 package codex.renthyl.debug;
 
-import codex.renthyl.ModuleIndex;
+import codex.renthyl.modules.ModuleIndex;
 import com.jme3.renderer.Camera;
 import com.jme3.renderer.ViewPort;
 import com.jme3.texture.FrameBuffer;

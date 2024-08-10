@@ -4,6 +4,7 @@
  */
 package codex.renthyl;
 
+import codex.renthyl.modules.ModuleIndex;
 import codex.renthyl.modules.RenderModule;
 import java.util.ArrayList;
 import java.util.LinkedList;
