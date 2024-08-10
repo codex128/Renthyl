@@ -1,7 +1,7 @@
 Technique GBufferPass {
         
     VertexShader   GLSL300 GLSL150 : Common/MatDefs/Terrain/PBRTerrain.vert
-    FragmentShader GLSL300 GLSL150 : FrameGraphCommon/MatDefs/GBuffer/AdvancedPBRTerrain.frag
+    FragmentShader GLSL300 GLSL150 : RenthylCommon/MatDefs/GBuffer/AdvancedPBRTerrain.frag
     
     WorldParameters {
         WorldViewProjectionMatrix

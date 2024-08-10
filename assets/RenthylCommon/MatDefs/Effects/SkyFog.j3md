@@ -11,8 +11,8 @@ MaterialDef SkyFog {
 
     Technique {
     
-        VertexShader   GLSL300 GLSL150 GLSL100 : FrameGraphCommon/MatDefs/Fullscreen/Screen.vert
-        FragmentShader GLSL300 GLSL150 GLSL100 : FrameGraphCommon/MatDefs/Effects/SkyFog.frag
+        VertexShader   GLSL300 GLSL150 GLSL100 : RenthylCommon/MatDefs/Fullscreen/Screen.vert
+        FragmentShader GLSL300 GLSL150 GLSL100 : RenthylCommon/MatDefs/Effects/SkyFog.frag
 
         WorldParameters {
         }

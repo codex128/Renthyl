@@ -1,13 +1,13 @@
 #import "Common/ShaderLib/GLSLCompat.glsllib"
 #define IN_GBUF
-#import "FrameGraphCommon/ShaderLib/Deferred.glsllib"
+#import "RenthylCommon/ShaderLib/Deferred.glsllib"
 #import "Common/ShaderLib/Parallax.glsllib"
 #import "Common/ShaderLib/Optics.glsllib"
 #import "Common/ShaderLib/BlinnPhongLighting.glsllib"
 #import "Common/ShaderLib/Lighting.glsllib"
 #import "Common/ShaderLib/PBR.glsllib"
-#import "FrameGraphCommon/ShaderLib/DeferredShadingModel.glsllib"
-#import "FrameGraphCommon/ShaderLib/Octahedral.glsllib"
+#import "RenthylCommon/ShaderLib/DeferredShadingModel.glsllib"
+#import "RenthylCommon/ShaderLib/Octahedral.glsllib"
 
 uniform vec4 g_AmbientLightColor;
 #import "FrameGraphCommon/ShaderLib/SkyLightReflectionProbe.glsllib"

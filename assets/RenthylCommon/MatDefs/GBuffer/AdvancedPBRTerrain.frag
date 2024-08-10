@@ -1,14 +1,14 @@
+#extension GL_EXT_texture_array : enable
 #import "Common/ShaderLib/GLSLCompat.glsllib"
 #import "Common/ShaderLib/PBR.glsllib"
-#import "Common/ShaderLib/Parallax.glsllib"
 #import "Common/ShaderLib/Lighting.glsllib"
 #import "Common/MatDefs/Terrain/AfflictionLib.glsllib"
-#import "FrameGraphCommon/ShaderLib/Deferred.glsllib"
+#import "RenthylCommon/ShaderLib/Deferred.glsllib"
 
 // shading model
-#import "FrameGraphCommon/ShaderLib/DeferredShadingModel.glsllib"
+#import "RenthylCommon/ShaderLib/DeferredShadingModel.glsllib"
 // octahedral
-#import "FrameGraphCommon/ShaderLib/Octahedral.glsllib"
+#import "RenthylCommon/ShaderLib/Octahedral.glsllib"
 
 varying vec3 wPosition;
 varying vec3 vNormal;
@@ -23,29 +23,32 @@ varying vec3 lightVec;
 varying vec3 inNormal;
 varying vec3 wNormal;
 
-#ifdef DEBUG_VALUES_MODE
-    uniform int m_DebugValuesMode;
-#endif
-
 #ifdef TRI_PLANAR_MAPPING
   varying vec4 wVertex; 
 #endif
 
-//texture-slot params for 12 unique texture slots (0-11) :
+//texture arrays:
+uniform sampler2DArray m_AlbedoTextureArray;
+uniform sampler2DArray m_NormalParallaxTextureArray;
+uniform sampler2DArray m_MetallicRoughnessAoEiTextureArray;
+
+//texture-slot params for 12 unique texture slots (0-11) where the integer value points to the desired texture's index in the corresponding texture array:
 #for i=0..12 ( $0 )
     uniform int m_AfflictionMode_$i;
     uniform float m_Roughness_$i;
     uniform float m_Metallic_$i;
+    uniform float m_AlbedoMap_$i_scale;
+    uniform vec4 m_EmissiveColor_$i;
     
     #ifdef ALBEDOMAP_$i
-        uniform sampler2D m_AlbedoMap_$i;
-    #endif
-    #ifdef ALBEDOMAP_$i_SCALE    
-        uniform float m_AlbedoMap_$i_scale;
-    #endif
+        uniform int m_AlbedoMap_$i;
+    #endif        
     #ifdef NORMALMAP_$i
-        uniform sampler2D m_NormalMap_$i;
+        uniform int m_NormalMap_$i;
     #endif    
+    #ifdef METALLICROUGHNESSMAP_$i
+        uniform int m_MetallicRoughnessMap_$i;
+    #endif
 #endfor 
 
 //3 alpha maps :
@@ -145,42 +148,47 @@ float emissiveIntensity = 1.0;
 float indoorSunLightExposure = 1.0;
  
 vec4 packedMetallicRoughnessAoEiVec;
-vec4 packedNormalParallaxVec;
+vec4 packedNormalParallaxVec;  
 
-void main(){
+
+void main(){    
     
     #ifdef USE_FOG
         fogDistance = distance(g_CameraPosition, wPosition.xyz);
     #endif
     
-    indoorSunLightExposure = 1.0;
+    float indoorSunLightExposure = 1.0;
     
     viewDir = normalize(g_CameraPosition - wPosition);
 
     norm  = normalize(wNormal);
     normal = norm;
 
+
     afflictionVector = vec4(1.0, 0.0, 1.0, 0.0); //r channel is sturation, g channel is affliction splat texture intensity, b and a unused (might use b channel for wetness eventually)
     
     #ifdef AFFLICTIONTEXTURE
     
         #ifdef TILELOCATION 
-        //subterrains that are not centred in tile or equal to tile width in total size need to have m_TileWidth pre-set. (tileWidth is the x,z dimesnions that the AfflictionAlphaMap represents)
+        //subterrains that are not centred in tile or equal to tile width in total size need to have m_TileWidth pre-set. (tileWidth is the x,z dimesnions that the AfflictionAlphaMap represents)..
             vec2 tileCoords;
             float xPos, zPos;
 
             vec3 locInTile = (wPosition - m_TileLocation);
 
-            locInTile += vec3(m_TileWidth/2, 0, m_TileWidth/2);
+             locInTile += vec3(m_TileWidth/2, 0, m_TileWidth/2);
 
-            xPos = (locInTile.x / m_TileWidth);
-            zPos = 1 - (locInTile.z / m_TileWidth);
+             xPos = (locInTile.x / m_TileWidth);
+             zPos = 1 - (locInTile.z / m_TileWidth);
 
             tileCoords = vec2(xPos, zPos);
 
             afflictionVector = texture2D(m_AfflictionAlphaMap, tileCoords).rgba;
+        
+        
+     
         #else
-           // ..othrewise when terrain size matches tileWidth and location matches tileLocation, the terrain's texCoords can be used for simple texel fetching of the AfflictionAlphaMap
+           // ..othrewise when terrain size matches tileWidth, the terrain's texCoords can be used for simple texel fetching of the AfflictionAlphaMap
             afflictionVector = texture2D(m_AfflictionAlphaMap, texCoord.xy).rgba;
         #endif
     #endif
@@ -188,15 +196,16 @@ void main(){
     livelinessValue = afflictionVector.r;
     afflictionValue = afflictionVector.g;
 
+
     #ifdef ALBEDOMAP_0
-        #ifdef ALPHAMAP
-            
+        #ifdef ALPHAMAP           
+
             vec4 alphaBlend;
             vec4 alphaBlend_0, alphaBlend_1, alphaBlend_2;
             int texChannelForAlphaBlending;
 
             alphaBlend_0 = texture2D( m_AlphaMap, texCoord.xy );
-           
+
             #ifdef ALPHAMAP_1
                 alphaBlend_1 = texture2D( m_AlphaMap_1, texCoord.xy );
             #endif
@@ -241,60 +250,103 @@ void main(){
                         break;            
                 }
 
-                afflictionMode = m_AfflictionMode_$i;
+                afflictionMode = m_AfflictionMode_$i;            
+                tempEmissiveColor = m_EmissiveColor_$i;
 
                 #ifdef TRI_PLANAR_MAPPING   
             //tri planar
-                    tempAlbedo = getTriPlanarBlend(wVertex, blending, m_AlbedoMap_$i, m_AlbedoMap_$i_scale);
+                    tempAlbedo = getTriPlanarBlendFromTexArray(wVertex, blending, m_AlbedoMap_$i, m_AlbedoMap_$i_scale, m_AlbedoTextureArray);
 
                     #ifdef NORMALMAP_$i
-                        tempNormal.rgb = getTriPlanarBlend(wVertex, blending, m_NormalMap_$i, m_AlbedoMap_$i_scale).rgb;
-                        tempNormal.rgb = calculateTangentsAndApplyToNormals(tempNormal.rgb, wNormal);// this gets rid of the need for pre-generating tangents for TerrainPatches, since doing so doesn't seem to work (tbnMat is always blank for terrains even with tangents pre-generated, not sure why...)
+                        packedNormalParallaxVec.rgba = getTriPlanarBlendFromTexArray(wVertex, blending, m_NormalMap_$i, m_AlbedoMap_$i_scale, m_NormalParallaxTextureArray).rgba;
+                        tempNormal.xyz = calculateTangentsAndApplyToNormals(packedNormalParallaxVec.xyz, wNormal);// this gets rid of the need for pre-generating tangents for TerrainPatches, since doing so doesn't seem to work (tbnMat is always blank for terrains even with tangents pre-generated, not sure why...)
+                        tempParallax = packedNormalParallaxVec.w;
+
+                        #ifdef PARALLAXHEIGHT_0    
+                            //wip
+                        #endif
                     #else
                         tempNormal.rgb = wNormal.rgb;
                     #endif
+                    #ifdef METALLICROUGHNESSMAP_$i
+                        packedMetallicRoughnessAoEiVec = getTriPlanarBlendFromTexArray(wVertex, blending, m_MetallicRoughnessMap_$i, m_AlbedoMap_$i_scale, m_MetallicRoughnessAoEiTextureArray).rgba;
+                        tempRoughness = packedMetallicRoughnessAoEiVec.g * m_Roughness_$i;
+                        tempMetallic = packedMetallicRoughnessAoEiVec.b * m_Metallic_$i;
+                        tempAo = packedMetallicRoughnessAoEiVec.r;
+                        tempEmissiveIntensity = packedMetallicRoughnessAoEiVec.a;        
+                    #endif
                 #else    
-                
+
              // non triplanar
                     texSlotCoords = texCoord * m_AlbedoMap_$i_scale;
 
-                    tempAlbedo.rgb = texture2D(m_AlbedoMap_$i, texSlotCoords).rgb;
+                    tempAlbedo =  texture2DArray(m_AlbedoTextureArray, vec3(texSlotCoords, m_AlbedoMap_$i));
+
                     #ifdef NORMALMAP_$i
-                        tempNormal.xyz = texture2D(m_NormalMap_$i, texSlotCoords).xyz;
-                        tempNormal.rgb = calculateTangentsAndApplyToNormals(tempNormal.rgb, wNormal);
+                        packedNormalParallaxVec = texture2DArray(m_NormalParallaxTextureArray, vec3(texSlotCoords,  m_NormalMap_$i));
+                        tempNormal.xyz = calculateTangentsAndApplyToNormals(packedNormalParallaxVec.xyz, wNormal);
+                        tempParallax = packedNormalParallaxVec.w;
+
+                        #ifdef PARALLAXHEIGHT_0  
+                            //eventually add parallax code here if a PARALLAXHEIGHT_$i float is defined. but this shader is at the define limit currently, 
+                           // so to do that will require removing defines around scale to use that for enabling parallax  per layer instead, since there's no reason for define around basic float scale anyways
+                        #endif
                     #else
                         tempNormal.rgb = wNormal.rgb;
                     #endif
+
+                    #ifdef METALLICROUGHNESSMAP_$i
+                        packedMetallicRoughnessAoEiVec = texture2DArray(m_MetallicRoughnessAoEiTextureArray, vec3(texSlotCoords, m_MetallicRoughnessMap_$i));
+                        tempRoughness = packedMetallicRoughnessAoEiVec.g * m_Roughness_$i;
+                        tempMetallic = packedMetallicRoughnessAoEiVec.b * m_Metallic_$i;
+                        tempAo = packedMetallicRoughnessAoEiVec.r;
+                        tempEmissiveIntensity = packedMetallicRoughnessAoEiVec.a;        
+                    #endif
                 #endif        
+
+
+                //blend to float values if no texture value for mrao map exists
+                #if !defined(METALLICROUGHNESSMAP_$i)
+                    tempRoughness =  m_Roughness_$i;
+                    tempMetallic =  m_Metallic_$i;
+                    tempAo = 1.0;
+                #endif
 
               //note: most of these functions can be found in AfflictionLib.glslib
                 tempAlbedo.rgb = alterLiveliness(tempAlbedo.rgb, livelinessValue, afflictionMode); //changes saturation of albedo for this layer; does nothing if not using AfflictionAlphaMap for affliction splatting        
 
+                tempEmissiveColor *= tempEmissiveIntensity;
+
              //mix values from this index layer to final output values based on finalAlphaBlendForLayer 
                 albedo.rgb = mix(albedo.rgb, tempAlbedo.rgb , finalAlphaBlendForLayer);        
                 normal.rgb = mix(normal.rgb, tempNormal.rgb, finalAlphaBlendForLayer);        
-                Metallic = mix(Metallic, m_Metallic_$i, finalAlphaBlendForLayer);
-                Roughness = mix(Roughness, m_Roughness_$i, finalAlphaBlendForLayer);
+                Metallic = mix(Metallic, tempMetallic, finalAlphaBlendForLayer);
+                Roughness = mix(Roughness, tempRoughness, finalAlphaBlendForLayer);
+                packedAoValue = mix(packedAoValue, tempAo, finalAlphaBlendForLayer);
+                emissiveIntensity = mix(emissiveIntensity, tempEmissiveIntensity, finalAlphaBlendForLayer);
+                emissive = mix(emissive, tempEmissiveColor, finalAlphaBlendForLayer);
 
-            #endfor            
+            #endfor         
+        #else
+            albedo = texture2D(m_AlbedoMap_0, texCoord);
         #endif
     #endif
-
 
     float alpha = albedo.a;
     #ifdef DISCARD_ALPHA
         if(alpha < m_AlphaDiscardThreshold){
             discard;
         }
-    #endif
-
+    #endif       
 
     //APPLY AFFLICTIONN TO THE PIXEL
     #ifdef AFFLICTIONTEXTURE
         vec4 afflictionAlbedo;    
 
+
         float newAfflictionScale = m_AfflictionSplatScale; 
         vec2 newScaledCoords;
+
 
         #ifdef AFFLICTIONALBEDOMAP
             #ifdef TRI_PLANAR_MAPPING
@@ -331,9 +383,14 @@ void main(){
         vec4 afflictionEmissive = m_AfflictionEmissiveColor;
         float afflictionEmissiveIntensity = m_AfflictionEmissiveValue;
 
-
         #ifdef AFFLICTIONROUGHNESSMETALLICMAP    
-            vec4 metallicRoughnessAoEiVec = texture2D(m_SplatRoughnessMetallicMap, newScaledCoords);
+            vec4 metallicRoughnessAoEiVec;
+            #ifdef TRI_PLANAR_MAPPING
+                metallicRoughnessAoEiVec = texture2D(m_SplatRoughnessMetallicMap, newScaledCoords);
+            #else
+                metallicRoughnessAoEiVec = getTriPlanarBlend(wVertex, blending, m_SplatRoughnessMetallicMap, newAfflictionScale);
+            #endif
+
             afflictionRoughness *= metallicRoughnessAoEiVec.g;
             afflictionMetallic *= metallicRoughnessAoEiVec.b;
             afflictionAo = metallicRoughnessAoEiVec.r;
@@ -342,13 +399,18 @@ void main(){
         #endif
 
         #ifdef AFFLICTIONEMISSIVEMAP
-            vec4 emissiveMapColor = texture2D(m_SplatEmissiveMap, newScaledCoords);
+            vec4 emissiveMapColor;
+            #ifdef TRI_PLANAR_MAPPING
+                emissiveMapColor = texture2D(m_SplatEmissiveMap, newScaledCoords);
+            #else
+                emissiveMapColor = getTriPlanarBlend(wVertex, blending, m_SplatEmissiveMap, newAfflictionScale);
+            #endif
             afflictionEmissive *= emissiveMapColor;
         #endif
 
         float adjustedAfflictionValue = afflictionValue;
         #ifdef USE_SPLAT_NOISE
-            noiseHash = getStaticNoiseVar0(wPosition, afflictionValue * m_SplatNoiseVar);
+            noiseHash = getStaticNoiseVar0(wPosition, afflictionValue * m_SplatNoiseVar); //VERY IMPORTANT to replace this with a noiseMap texture, as calculating noise per pixel in-shader like this does lower framerate a lot
 
             adjustedAfflictionValue = getAdjustedAfflictionVar(afflictionValue);
             if(afflictionValue >= 0.99){
@@ -356,7 +418,7 @@ void main(){
             }
         #else
             noiseHash = 1.0;
-        #endif        
+        #endif           
 
         Roughness = alterAfflictionRoughness(adjustedAfflictionValue, Roughness, afflictionRoughness, noiseHash);
         Metallic = alterAfflictionMetallic(adjustedAfflictionValue, Metallic,  afflictionMetallic, noiseHash);
@@ -366,16 +428,19 @@ void main(){
         emissiveIntensity = alterAfflictionEmissiveIntensity(adjustedAfflictionValue, emissiveIntensity, afflictionEmissiveIntensity, noiseHash);
         emissiveIntensity *= afflictionEmissive.a;
         //affliction ao value blended below after specular calculation
+        
     #endif
 
-// spec gloss pipeline code would go here if supported, but likely will not be for terrain shaders as defines are limited and heavily used
+    // spec gloss pipeline code would go here if supported, but likely will not be for terrain shaders as defines are limited and heavily used
 
-float specular = 0.5;
-float nonMetalSpec = 0.08 * specular;
-vec4 specularColor = (nonMetalSpec - nonMetalSpec * Metallic) + albedo * Metallic;
-vec4 diffuseColor = albedo - albedo * Metallic;
-vec3 fZero = vec3(specular);
+    float specular = 0.5;
+    float nonMetalSpec = 0.08 * specular;
+    vec4 specularColor = (nonMetalSpec - nonMetalSpec * Metallic) + albedo * Metallic;
+    vec4 diffuseColor = albedo - albedo * Metallic;
+    vec3 fZero = vec3(specular);
 
+    //gl_FragColor.rgb = vec3(0.0);
+ 
 //simple ao calculation, no support for lightmaps like stock pbr shader.. (probably could add lightmap support with another texture array, but
 //                                                                         that would add another texture read per slot and require removing 12 other defines to make room...)
     vec3 ao = vec3(packedAoValue);
@@ -385,6 +450,8 @@ vec3 fZero = vec3(specular);
     #endif
     ao.rgb = ao.rrr;
     specularColor.rgb *= ao;
+ 
+ 
   
     #ifdef STATIC_SUN_INTENSITY
         indoorSunLightExposure = m_StaticSunIntensity; //single float value to indicate percentage of
@@ -393,14 +460,12 @@ vec3 fZero = vec3(specular);
     #ifdef USE_VERTEX_COLORS_AS_SUN_INTENSITY
         indoorSunLightExposure = vertColors.r * indoorSunLightExposure;      //use R channel of vertexColors for..       
     #endif 
-                                                              // similar purpose as above...
-                                                               //but uses r channel vert colors like an AO map specifically
-                                                              //for sunlight (solution for scaling lighting for indoor
-                                                               // and shadey/dimly lit models, especially big ones that 
-                                                              // span accross varying directionalLight exposure)
+                                                               // similar purpose as above...
+                                                             //but uses r channel vert colors like an AO map specifically
+                                                                 //for sunlight (solution for scaling lighting for indoor
+                                                                  // and shadey/dimly lit models, especially big ones with)
     brightestPointLight = 0.0;
-    
-     
+
     // pack
     vec2 n1 = octEncode(normal);
     vec2 n2 = octEncode(norm);
@@ -419,17 +484,33 @@ vec3 fZero = vec3(specular);
         minVertLighting = 0.0833; //brighten shadows so that caves which are naturally covered from the DL shadows are not way too dark compared to when shadows are off (mostly only necessary for naturally dark scenes, or dark areas when using the sun intensity code above)
     #else
         minVertLighting = 0.0533;
-
+    
     #endif
-
-    indoorSunLightExposure = max(indoorSunLightExposure, brightestPointLight);
-    indoorSunLightExposure = max(indoorSunLightExposure, minVertLighting);       //scale the indoorSunLightExposure back up to account for the brightest point light nearby before scaling light probes by this value below
+    
+    indoorSunLightExposure = max(indoorSunLightExposure, brightestPointLight);   
+    indoorSunLightExposure = max(indoorSunLightExposure, minVertLighting);       //scale the indoorSunLightExposure back up to account for the brightest point light nearby before scaling light probes by this value below   
 
     // shading model id
     outGBuffer2.a = PBR_LIGHTING + indoorSunLightExposure * 0.01f;
 
-    if(emissive.a > 0){
-        emissive = emissive * pow(emissive.a * 5, emissiveIntensity) * emissiveIntensity * 20 * emissive.a;
+    if(emissive.a > 0){    
+        emissive = emissive * pow(emissive.a * 5, emissiveIntensity) * emissiveIntensity * 20 * emissive.a;    
     }
+  //  emissive = emissive * pow(emissiveIntensity * 2.3, emissive.a);
+
     outGBuffer2.rgb = emissive.rgb;
+   
+     // add fog after the lighting because shadows will cause the fog to darken
+    // which just results in the geometry looking like it's changed color
+    //#ifdef USE_FOG
+    //    #ifdef FOG_LINEAR
+    //        gl_FragColor = getFogLinear(gl_FragColor, m_FogColor, m_LinearFog.x, m_LinearFog.y, fogDistance);
+    //    #endif
+    //    #ifdef FOG_EXP
+    //        gl_FragColor = getFogExp(gl_FragColor, m_FogColor, m_ExpFog, fogDistance);
+    //    #endif
+    //    #ifdef FOG_EXPSQ
+    //        gl_FragColor = getFogExpSquare(gl_FragColor, m_FogColor, m_ExpSqFog, fogDistance);
+    //    #endif
+    //#endif
 }
