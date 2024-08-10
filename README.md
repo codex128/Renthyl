@@ -25,7 +25,7 @@ Renthyl is a modular FrameGraph-based rendering pipeline designed with efficienc
    
 ```java
 Renthyl.initialize(application);
-FrameGraph fg = FrameGraphFactory.forward(assetManager);
+FrameGraph fg = Renthyl.forward(assetManager);
 viewPort.setPipeline(fg);
 ```
 
