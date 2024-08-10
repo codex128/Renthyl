@@ -31,7 +31,7 @@ package codex.renthyl.modules.deferred;
 import codex.renthyl.FGRenderContext;
 import codex.renthyl.FrameGraph;
 import codex.renthyl.GeometryQueue;
-import codex.renthyl.ResourceTicket;
+import codex.renthyl.resources.ResourceTicket;
 import codex.renthyl.definitions.TextureDef;
 import codex.renthyl.material.MaterialAdapter;
 import codex.renthyl.modules.RenderPass;

@@ -6,9 +6,10 @@ package codex.renthyl;
 
 import codex.renthyl.modules.RenderModule;
 import java.util.ArrayList;
-import java.util.ConcurrentModificationException;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -26,6 +27,8 @@ public class ExecutionThreadManager {
     private FGRenderContext context;
     private int activeThreads = 0;
     private boolean error = false;
+    private final AtomicBoolean locked = new AtomicBoolean(false);
+    private final Lock threadLock = new ReentrantLock();
     
     /**
      * 
@@ -46,9 +49,14 @@ public class ExecutionThreadManager {
         while (threads.size() < queues.size()) {
             threads.add(new ThreadExecutor(threads.size()));
         }
+        locked.set(false);
         for (int i = queues.size(); i >= 0; i--) {
             List<RenderModule> q = queues.getQueue(i);
             if (q != null) {
+                if (!locked.get() && i > 0) {
+                    threadLock.lock();
+                    locked.set(true);
+                }
                 threads.get(i).start(q);
             }
         }
@@ -69,9 +77,19 @@ public class ExecutionThreadManager {
     /**
      * Indicates that an error has occured and execution
      * should be interrupted.
+     * 
+     * @param force if true, all active threads (except the main thread) are interrupted
      */
-    public void error() {
+    public void error(boolean force) {
         error = true;
+        if (force) {
+            for (int i = 1; i < threads.size(); i++) {
+                threads.get(i).interrupt();
+            }
+            if (locked.getAndSet(false)) {
+                threadLock.unlock();
+            }
+        }
         threads.clear();
     }
     
@@ -94,23 +112,28 @@ public class ExecutionThreadManager {
     }
     
     /**
-     * Sets the number of milliseconds a thread will wait for the next
-     * execution session before dying.
-     * <p>
-     * default=5000
-     * 
-     * @param timeout 
-     */
-    public static void setTimeoutMillis(long timeout) {
-        ExecutionThreadManager.timeout = timeout;
-    }
-    
-    /**
+     * Gets the lock used for waiting until all threads are complete.
      * 
      * @return 
      */
-    public static long getTimeoutMillis() {
-        return timeout;
+    public Lock getThreadLock() {
+        return threadLock;
+    }
+    
+    /**
+     * Returns true if the thread lock is currently acquired
+     * by this ExecutionThreadManager.
+     * 
+     * @return 
+     */
+    public boolean isLocked() {
+        return locked.get();
+    }
+    
+    private void notifyThreadComplete() {
+        if (--activeThreads <= 0 && locked.getAndSet(false)) {
+            threadLock.unlock();
+        }
     }
     
     private class ThreadExecutor implements Runnable {
@@ -136,10 +159,10 @@ public class ExecutionThreadManager {
                     }
                 } catch (Exception ex) {
                     LOG.log(Level.SEVERE, "An exception occured while executing thread "+index, ex);
-                    error();
+                    error(false);
                 }
                 run = false;
-                activeThreads--;
+                notifyThreadComplete();
                 long start = System.currentTimeMillis();
                 while (!run && !error && thread != null) {
                     if (System.currentTimeMillis()-start >= timeout) {
@@ -178,6 +201,33 @@ public class ExecutionThreadManager {
             queue = null;
         }
         
+        public void interrupt() {
+            if (thread != null) {
+                thread.interrupt();
+            }
+            thread = null;
+        }
+        
+    }
+    
+    /**
+     * Sets the number of milliseconds a thread will wait for the next
+     * execution session before dying.
+     * <p>
+     * default=5000
+     * 
+     * @param timeout 
+     */
+    public static void setTimeoutMillis(long timeout) {
+        ExecutionThreadManager.timeout = timeout;
+    }
+    
+    /**
+     * 
+     * @return 
+     */
+    public static long getTimeoutMillis() {
+        return timeout;
     }
     
 }

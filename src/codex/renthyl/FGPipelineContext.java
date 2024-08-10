@@ -28,6 +28,7 @@
  */
 package codex.renthyl;
 
+import codex.renthyl.resources.RenderObjectMap;
 import codex.renthyl.debug.GraphEventCapture;
 import com.jme3.app.Application;
 import com.jme3.app.state.AppState;

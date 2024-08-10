@@ -32,7 +32,7 @@ import codex.renthyl.modules.RenderPass;
 import codex.renthyl.FGRenderContext;
 import codex.renthyl.FrameGraph;
 import codex.renthyl.GeometryQueue;
-import codex.renthyl.ResourceTicket;
+import codex.renthyl.resources.ResourceTicket;
 import com.jme3.export.InputCapsule;
 import com.jme3.export.JmeExporter;
 import com.jme3.export.JmeImporter;

@@ -26,8 +26,12 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package codex.renthyl;
+package codex.renthyl.resources;
 
+import codex.renthyl.FrameGraph;
+import codex.renthyl.ModuleIndex;
+import codex.renthyl.resources.RenderObjectMap;
+import codex.renthyl.resources.RenderObject;
 import codex.renthyl.debug.GraphEventCapture;
 import codex.renthyl.definitions.ResourceDef;
 import com.jme3.texture.FrameBuffer;

@@ -28,6 +28,8 @@
  */
 package codex.renthyl;
 
+import codex.renthyl.resources.ResourceTicket;
+
 /**
  *
  * @author codex

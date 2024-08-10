@@ -29,7 +29,7 @@
 package codex.renthyl.export;
 
 import codex.renthyl.Connectable;
-import codex.renthyl.ResourceTicket;
+import codex.renthyl.resources.ResourceTicket;
 import codex.renthyl.modules.RenderModule;
 import com.jme3.export.InputCapsule;
 import com.jme3.export.JmeExporter;

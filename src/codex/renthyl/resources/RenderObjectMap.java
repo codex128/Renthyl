@@ -26,8 +26,10 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package codex.renthyl;
+package codex.renthyl.resources;
 
+import codex.renthyl.FGPipelineContext;
+import codex.renthyl.ModuleIndex;
 import codex.renthyl.debug.GraphEventCapture;
 import codex.renthyl.definitions.ResourceDef;
 import java.util.Iterator;
@@ -211,7 +213,7 @@ public class RenderObjectMap {
                     // If multiple threads do happen to be here at the same time, ensure only one
                     // will inspect at a time.
                     synchronized (obj) {
-                        // The thread we were waiting on may have claimed to object, so check again
+                        // The thread we were waiting on may have claimed the object, so check again
                         // if it is available.
                         if (!isAvailable(obj)) {
                             continue;

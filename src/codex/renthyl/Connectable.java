@@ -28,6 +28,8 @@
  */
 package codex.renthyl;
 
+import codex.renthyl.resources.ResourceTicket;
+
 /**
  * Able to recieve inputs via input tickets and broadcast outputs
  * via output tickets.

@@ -30,8 +30,8 @@ package codex.renthyl.modules;
 
 import codex.renthyl.FGRenderContext;
 import codex.renthyl.FrameGraph;
-import codex.renthyl.ResourceList;
-import codex.renthyl.ResourceTicket;
+import codex.renthyl.resources.ResourceList;
+import codex.renthyl.resources.ResourceTicket;
 import codex.renthyl.TicketGroup;
 import codex.renthyl.debug.GraphEventCapture;
 import codex.renthyl.definitions.ResourceDef;

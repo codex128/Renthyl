@@ -30,7 +30,7 @@ package codex.renthyl.modules.light;
 
 import codex.renthyl.FGRenderContext;
 import codex.renthyl.FrameGraph;
-import codex.renthyl.ResourceTicket;
+import codex.renthyl.resources.ResourceTicket;
 import codex.renthyl.definitions.TextureDef;
 import codex.renthyl.light.LightImagePacker;
 import codex.renthyl.light.TiledRenderGrid;

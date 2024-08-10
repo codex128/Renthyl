@@ -26,8 +26,10 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package codex.renthyl;
+package codex.renthyl.resources;
 
+import codex.renthyl.ModuleIndex;
+import codex.renthyl.TimeFrame;
 import codex.renthyl.definitions.ResourceDef;
 import com.jme3.util.NativeObject;
 import java.util.LinkedList;

@@ -28,6 +28,7 @@
  */
 package codex.renthyl;
 
+import codex.renthyl.resources.ResourceList;
 import codex.renthyl.asset.FrameGraphKey;
 import codex.renthyl.client.GraphSetting;
 import codex.renthyl.client.GraphSource;
@@ -48,8 +49,10 @@ import com.jme3.renderer.RendererException;
 import com.jme3.renderer.pipeline.RenderPipeline;
 import com.jme3.renderer.ViewPort;
 import java.util.HashMap;
-import java.util.LinkedList;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
 import java.util.function.Function;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -196,7 +199,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
         // execute
         context.pushRenderSettings();
         threadManager.start(context, executionQueues);
-        waitForActiveThreads(pContext.getThreadManager(), THREAD_WAIT_TIMEOUT);
+        waitForActiveThreads(threadManager);
         if (threadManager.didErrorOccur()) {
             throw new RendererException("FrameGraph render incomplete.");
         }
@@ -225,15 +228,22 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
         return "FrameGraph ("+name+")";
     }
     
-    private void waitForActiveThreads(ExecutionThreadManager threads, long timeout) {
-        if (threads.getNumActiveThreads() > 0) {
-            long start = System.currentTimeMillis();
-            while (threads.getNumActiveThreads() > 0) {
-                if (System.currentTimeMillis()-start > timeout) {
-                    throw new RendererException("Timed out waiting for "
-                            + threads.getNumActiveThreads() + " threads to complete.");
-                }
+    private void waitForActiveThreads(ExecutionThreadManager threadManager) {
+        if (threadManager.getNumActiveThreads() == 0) {
+            return;
+        }
+        try {
+            Lock lock = threadManager.getThreadLock();
+            if (!lock.tryLock(THREAD_WAIT_TIMEOUT, TimeUnit.MILLISECONDS)) {
+                threadManager.error(true);
+                throw new RendererException("FrameGraph timed out after " + THREAD_WAIT_TIMEOUT
+                        + " milliseconds waiting for " + threadManager.getNumActiveThreads()
+                        + " active threads to complete.");
+            } else {
+                lock.unlock();
             }
+        } catch (InterruptedException ex) {
+            LOG.log(Level.SEVERE, "Rendering was interrupted while waiting for threads to complete.", ex);
         }
     }
     
@@ -248,6 +258,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
         root.add(module);
         return module;
     }
+    
     /**
      * Adds the pass at the index.
      * <p>
@@ -267,6 +278,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
         root.add(module, index);
         return module;
     }
+    
     /**
      * Adds the pass to end of the {@link PassThread} running on the main render thread.
      * 
@@ -280,6 +292,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
         module.setName(name);
         return module;
     }
+    
     /**
      * Adds the pass at the index.
      * <p>
@@ -325,6 +338,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
         root.addLoop(array, -1, factory, inTicket, outTicket);
         return array;
     }
+    
     /**
      * Adds an array of passes connected in series to the framegraph.
      * <p>
@@ -372,6 +386,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
         settings.put(name, object);
         return object;
     }
+    
     /**
      * Registers the object under the name in the settings map, and creates
      * a {@link GraphSetting} with the same name.
@@ -388,6 +403,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
         setSetting(name, object);
         return new GraphSetting<>(name, defaultValue);
     }
+    
     /**
      * Sets an integer in the settings map based on a boolean value.
      * <p>
@@ -402,6 +418,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
     public int enableFeature(String name, boolean enable) {
         return setSetting(name, enable ? 0 : -1);
     }
+    
     /**
      * Enables the named feature if it is disabled, and vise versa.
      * 
@@ -411,6 +428,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
     public boolean toggleFeature(String name) {
         return enableFeature(name, !isFeatureEnabled(name)) == 0;
     }
+    
     /**
      * Gets the object registered under the name in the settings map,
      * or null if none is registered.
@@ -427,6 +445,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
             return null;
         }
     }
+    
     /**
      * Gets the object of the type registered under the name in
      * the settings map.
@@ -444,6 +463,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
             return null;
         }
     }
+    
     /**
      * Returns true if the named feature is enabled.
      * 
@@ -454,6 +474,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
         Integer feature = getSetting(name, Integer.class);
         return feature != null && feature == 0;
     }
+    
     /**
      * Removes the object registered under the name in the settings map.
      * 
@@ -469,6 +490,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
             return null;
         }
     }
+    
     /**
      * Gets the settings map.
      * <p>
@@ -496,6 +518,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
     public void setName(String name) {
         this.name = name;
     }
+    
     /**
      * Sets layout updates as dynamic, so specifically setting
      * an update flag is not necessary.
@@ -507,6 +530,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
     public void setDynamic(boolean dynamic) {
         this.dynamic = dynamic;
     }
+    
     /**
      * Sets the asset path corresponding to a documentation file for
      * this FrameGraph.
@@ -516,6 +540,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
     public void setDocumentationAsset(String docs) {
         this.docAsset = docs;
     }
+    
     /**
      * Sets the OpenCL context used for compute shading.
      * 
@@ -524,6 +549,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
     public void setCLContext(Context clContext) {
         context.setCLContext(clContext);
     }
+    
     /**
      * Assigns this framegraph to the OpenCL command queue.
      * <p>
@@ -534,6 +560,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
     public void setCLQueue(CommandQueue clQueue) {
         context.setCLQueue(clQueue);
     }
+    
     /**
      * Enables printing of information useful for debugging.
      * <p>
@@ -545,9 +572,16 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
         this.debugPrint = debugPrint;
     }
     
+    /**
+     * Gets the root container for this FrameGraph that all
+     * modules are descended from.
+     * 
+     * @return 
+     */
     public RenderContainer getRoot() {
         return root;
     }
+    
     /**
      * Gets the {@link AssetManager} assigned to this FrameGraph.
      * 
@@ -556,6 +590,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
     public AssetManager getAssetManager() {
         return assetManager;
     }
+    
     /**
      * Gets the {@link ResourceList} that manages resources for this FrameGraph.
      * 
@@ -564,6 +599,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
     public ResourceList getResources() {
         return resources;
     }
+    
     /**
      * Gets the rendering context.
      * 
@@ -572,6 +608,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
     public FGRenderContext getContext() {
         return context;
     }
+    
     /**
      * Gets the RenderManager.
      * 
@@ -580,6 +617,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
     public RenderManager getRenderManager() {
         return context.getRenderManager();
     }
+    
     /**
      * Gets the OpenCL context used for compute shading, or null if not set.
      * 
@@ -588,6 +626,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
     public Context getCLContext() {
         return context.getCLContext();
     }
+    
     /**
      * Gets the name of this framegraph.
      * 
@@ -596,6 +635,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
     public String getName() {
         return name;
     }
+    
     /**
      * Returns an asset path corresponding to a documentation file for
      * this FrameGraph.
@@ -605,6 +645,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
     public String getDocumantationAsset() {
         return docAsset;
     }
+    
     /**
      * 
      * @return 
@@ -612,6 +653,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
     public boolean isDynamic() {
         return dynamic;
     }
+    
     /**
      * 
      * @return 
@@ -619,6 +661,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
     public boolean isLayoutUpdateNeeded() {
         return layoutUpdateNeeded;
     }
+    
     /**
      * Returns true if this framegraph is running asynchronous {@link PassThread}s.
      * 
@@ -627,6 +670,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
     public boolean isAsync() {
         return executionQueues.getNumActiveQueues() > 1;
     }
+    
     /**
      * 
      * @return 
@@ -648,6 +692,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
         }
         return applyData(data.getModules());
     }
+    
     /**
      * Applies the {@link ModuleGraphData} to this FrameGraph.
      * 
@@ -668,6 +713,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
         setLayoutUpdateNeeded();
         return this;
     }
+    
     /**
      * Applies the {@link ModuleGraphData} to this FrameGraph.
      * 
@@ -689,6 +735,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
             throw new NullPointerException("Data cannot be null.");
         }
     }
+    
     /**
      * Loads and applies {@link ModuleGraphData} from the key.
      * 
@@ -698,6 +745,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
     public FrameGraph loadData(FrameGraphKey key) {
         return applyData(assetManager.loadAsset(key));
     }
+    
     /**
      * Loads and applies {@link ModuleGraphData} at the specified asset path.
      * 
@@ -707,6 +755,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
     public FrameGraph loadData(String assetPath) {
         return applyData(assetManager.loadAsset(new FrameGraphKey(assetPath)));
     }
+    
     /**
      * Creates an exportable version of this FrameGraph as {@link FrameGraphData}.
      * 
@@ -715,6 +764,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
     public FrameGraphData createData() {
         return new FrameGraphData(this);
     }
+    
     /**
      * Creates exportable version of this FrameGraph as {@link ModuleGraphData}.
      * 

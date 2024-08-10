@@ -28,6 +28,7 @@
  */
 package codex.renthyl;
 
+import codex.renthyl.resources.ResourceList;
 import codex.renthyl.util.FullScreenQuad;
 import codex.renthyl.debug.GraphEventCapture;
 import com.jme3.material.Material;

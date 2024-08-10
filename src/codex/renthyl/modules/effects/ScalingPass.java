@@ -31,7 +31,7 @@ package codex.renthyl.modules.effects;
 import codex.renthyl.modules.RenderPass;
 import codex.renthyl.FGRenderContext;
 import codex.renthyl.FrameGraph;
-import codex.renthyl.ResourceTicket;
+import codex.renthyl.resources.ResourceTicket;
 import codex.renthyl.definitions.TextureDef;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
