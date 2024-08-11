@@ -408,7 +408,7 @@ public abstract class RenderPass extends RenderModule implements Savable {
      * @param samples samples requirement for returned FrameBuffer
      * @return FrameBuffer matching given width, height, and samples
      */
-    protected FrameBuffer getFrameBuffer(GraphEventCapture cap, String tag, int width, int height, int samples) {
+    protected FrameBuffer getFrameBuffer(GraphEventCapture cap, Object tag, int width, int height, int samples) {
         if (tag == null) {
             tag = PassFrameBuffer.DEF_TAG;
         }
@@ -454,7 +454,7 @@ public abstract class RenderPass extends RenderModule implements Savable {
      * @return 
      * @see #getFrameBuffer(com.jme3.renderer.framegraph.debug.GraphEventCapture, java.lang.String, int, int, int) 
      */
-    protected FrameBuffer getFrameBuffer(String tag, int width, int height, int samples) {
+    protected FrameBuffer getFrameBuffer(Object tag, int width, int height, int samples) {
         return getFrameBuffer(null, tag, width, height, samples);
     }
     /**
@@ -477,7 +477,7 @@ public abstract class RenderPass extends RenderModule implements Savable {
      * @return 
      * @see #getFrameBuffer(com.jme3.renderer.framegraph.debug.GraphEventCapture, java.lang.String, int, int, int) 
      */
-    protected FrameBuffer getFrameBuffer(FGRenderContext context, String tag, int samples) {
+    protected FrameBuffer getFrameBuffer(FGRenderContext context, Object tag, int samples) {
         return getFrameBuffer(context.getGraphCapture(), tag, context.getWidth(), context.getHeight(), samples);
     }
     
@@ -509,14 +509,14 @@ public abstract class RenderPass extends RenderModule implements Savable {
         
         public static final String DEF_TAG = "#DefaultTag";
         
-        public final String tag;
+        public final Object tag;
         public final FrameBuffer frameBuffer;
         public boolean used = false;
         
         public PassFrameBuffer(int width, int height, int samples) {
             this(DEF_TAG, width, height, samples);
         }
-        public PassFrameBuffer(String tag, int width, int height, int samples) {
+        public PassFrameBuffer(Object tag, int width, int height, int samples) {
             this.tag = tag;
             frameBuffer = new FrameBuffer(width, height, samples);
         }
@@ -526,7 +526,7 @@ public abstract class RenderPass extends RenderModule implements Savable {
             return frameBuffer;
         }
         
-        public boolean qualifies(String tag, int width, int height, int samples) {
+        public boolean qualifies(Object tag, int width, int height, int samples) {
             return frameBuffer.getWidth()   == width
                 && frameBuffer.getHeight()  == height
                 && frameBuffer.getSamples() == samples

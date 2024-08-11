@@ -33,6 +33,7 @@ import codex.renthyl.FGRenderContext;
 import codex.renthyl.FrameGraph;
 import codex.renthyl.GeometryQueue;
 import codex.renthyl.resources.ResourceTicket;
+import codex.renthyl.util.SpatialWorldParam;
 import com.jme3.export.InputCapsule;
 import com.jme3.export.JmeExporter;
 import com.jme3.export.JmeImporter;
@@ -55,6 +56,7 @@ import com.jme3.scene.Spatial;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -94,6 +96,8 @@ public class SceneEnqueuePass extends RenderPass {
     
     private boolean runControlRender = true;
     private final HashMap<String, Queue> queues = new HashMap<>();
+    private final LinkedList<SpatialWorldParam> worldParams = new LinkedList<>();
+    private final SpatialWorldParam<String> queueParam = SpatialWorldParam.renderQueueParam();
     private String defaultBucket = OPAQUE;
 
     /**
@@ -101,7 +105,9 @@ public class SceneEnqueuePass extends RenderPass {
      * <p>
      * Default queues are not added.
      */
-    public SceneEnqueuePass() {}
+    public SceneEnqueuePass() {
+        this(true, true);
+    }
     /**
      * 
      * @param runControlRender true to have this pass run {@link com.jme3.scene.control.Control} renders
@@ -116,6 +122,7 @@ public class SceneEnqueuePass extends RenderPass {
             add(GUI, new GuiComparator(), DepthRange.FRONT, false);
             add(TRANSLUCENT, new TransparentComparator());
         }
+        worldParams.add(queueParam);
     }
     
     @Override
@@ -138,7 +145,7 @@ public class SceneEnqueuePass extends RenderPass {
         List<Spatial> scenes = vp.getScenes();
         for (int i = scenes.size()-1; i >= 0; i--) {
             vp.getCamera().setPlaneState(0);
-            queueSubScene(context, scenes.get(i), null);
+            queueSubScene(context, scenes.get(i));
         }
         for (Queue b : queues.values()) {
             resources.setPrimitive(b.geometry, b.queue);
@@ -177,7 +184,7 @@ public class SceneEnqueuePass extends RenderPass {
         defaultBucket = in.readString("defaultBucket", OPAQUE);
     }
     
-    private void queueSubScene(FGRenderContext context, Spatial spatial, String parentBucket) {
+    private void queueSubScene(FGRenderContext context, Spatial spatial) {
         // check culling
         Camera cam = context.getViewPort().getCamera();
         if (!spatial.checkCulling(cam)) {
@@ -187,9 +194,16 @@ public class SceneEnqueuePass extends RenderPass {
         if (runControlRender) {
             spatial.runControlRender(context.getRenderManager(), context.getViewPort());
         }
+        // apply world parameters
+        for (SpatialWorldParam p : worldParams) {
+            p.apply(spatial);
+        }
         // get target bucket
-        String value = getSpatialBucket(spatial, parentBucket);
-        Queue queue = (value != null ? queues.get(value) : null);
+        String value = queueParam.getWorldValue(spatial);
+        if (value == null) {
+            throw new NullPointerException("World render queue value was not calculated correctly.");
+        }
+        Queue queue = queues.get(value);
         // accumulate lights
         if (queue != null) for (Light l : spatial.getLocalLightList()) {
             queue.lightList.add(l);
@@ -199,7 +213,7 @@ public class SceneEnqueuePass extends RenderPass {
             for (Spatial s : ((Node)spatial).getChildren()) {
                 // restore cam state before queueing children
                 cam.setPlaneState(camState);
-                queueSubScene(context, s, value);
+                queueSubScene(context, s);
             }
         } else if (queue != null && spatial instanceof Geometry) {
             // add to the render queue
@@ -209,22 +223,6 @@ public class SceneEnqueuePass extends RenderPass {
             }
             queue.queue.add(g);
         }
-    }
-    private String getSpatialBucket(Spatial spatial, String parentValue) {
-        String value = spatial.getUserData(QUEUE);
-        if (value == null) {
-            value = spatial.getLocalQueueBucket().name();
-        }
-        if (value.equals(INHERIT)) {
-            if (parentValue != null) {
-                value = parentValue;
-            } else if (spatial.getParent() != null) {
-                value = getSpatialBucket(spatial.getParent(), null);
-            } else {
-                value = defaultBucket;
-            }
-        }
-        return value;
     }
     
     /**

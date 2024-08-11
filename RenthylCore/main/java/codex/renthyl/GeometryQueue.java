@@ -33,10 +33,13 @@ import com.jme3.renderer.Camera;
 import com.jme3.renderer.GeometryRenderHandler;
 import com.jme3.renderer.RenderManager;
 import com.jme3.renderer.queue.GeometryComparator;
+import com.jme3.renderer.queue.GeometryList;
 import com.jme3.renderer.queue.NullComparator;
 import com.jme3.scene.Geometry;
 import com.jme3.util.ListSort;
-import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.function.Function;
 
 /**
  * Queue of ordered geometries for rendering.
@@ -47,7 +50,7 @@ import java.util.ArrayList;
  * 
  * @author codex
  */
-public class GeometryQueue {
+public class GeometryQueue implements Iterable<Geometry> {
     
     private static final int DEFAULT_SIZE = 32;
     
@@ -55,11 +58,11 @@ public class GeometryQueue {
     private GeometryComparator comparator;
     private Camera cam;
     private final ListSort listSort;
-    private final ArrayList<GeometryQueue> internalQueues = new ArrayList<>();
+    private final LinkedList<GeometryQueue> internalQueues = new LinkedList<>();
     private final DepthRange depth = new DepthRange();
     private boolean updateFlag = true;
     private boolean perspective = true;
-    private int size;
+    private int size = 0;
     
     /**
      * Geometry queue with default settings and a {@link NullComparator}.
@@ -73,9 +76,16 @@ public class GeometryQueue {
      * @param comparator 
      */
     public GeometryQueue(GeometryComparator comparator) {
-        size = 0;
-        geometries = new Geometry[DEFAULT_SIZE];
+        this(comparator, DEFAULT_SIZE);
+    }
+    /**
+     * 
+     * @param comparator
+     * @param initialSize 
+     */
+    public GeometryQueue(GeometryComparator comparator, int initialSize) {
         this.comparator = comparator;
+        geometries = new Geometry[initialSize];
         listSort = new ListSort<Geometry>();
     }
     
@@ -102,11 +112,8 @@ public class GeometryQueue {
      * @param handler 
      */
     public void render(RenderManager renderManager, GeometryRenderHandler handler) {
-        GeometryRenderHandler h;
         if (handler == null) {
-            h = GeometryRenderHandler.DEFAULT;
-        } else {
-            h = handler;
+            handler = GeometryRenderHandler.DEFAULT;
         }
         renderManager.getRenderer().setDepthRange(depth);
         if (!perspective) {
@@ -114,7 +121,7 @@ public class GeometryQueue {
         }
         for (Geometry g : geometries) {
             if (g == null) continue;
-            h.renderGeometry(renderManager, g);
+            handler.renderGeometry(renderManager, g);
             g.queueDistance = Float.NEGATIVE_INFINITY;
         }
         if (!perspective) {
@@ -183,6 +190,70 @@ public class GeometryQueue {
     }
     
     /**
+     * Removes all geometries from
+     */
+    public void removeAllGeometries() {
+        
+    }
+    
+    /**
+     * Makes a copy of this queue's parameters (not geometries or internal queues).
+     * 
+     * @param includeInternalQueues
+     * @return 
+     */
+    public GeometryQueue makeParamCopy(boolean includeInternalQueues) {
+        GeometryQueue target = new GeometryQueue(comparator, size);
+        target.cam = cam;
+        target.depth.set(depth);
+        target.updateFlag = updateFlag;
+        target.perspective = perspective;
+        if (includeInternalQueues) for (GeometryQueue q : internalQueues) {
+            target.add(q.makeParamCopy(true));
+        }
+        return target;
+    }
+    
+    /**
+     * Makes a copy of this queue and all internal queues.
+     * 
+     * @return 
+     */
+    public GeometryQueue makeCopy() {
+        GeometryQueue target = makeParamCopy(false);
+        for (Geometry g : geometries) {
+            target.add(g);
+        }
+        for (GeometryQueue q : internalQueues) {
+            target.add(q.makeCopy());
+        }
+        return target;
+    }
+    
+    /**
+     * Generates a new GeometryQueue that contains only geometry
+     * approved by the filter.
+     * 
+     * @param filter
+     * @return 
+     */
+    public GeometryQueue cull(Function<Geometry, Boolean> filter) {
+        GeometryQueue target = makeParamCopy(false);
+        for (Geometry g : geometries) {
+            if (!filter.apply(g)) {
+                target.add(g);
+            }
+        }
+        for (GeometryQueue q : internalQueues) {
+            GeometryQueue result = q.cull(filter);
+            if (result.containsGeometry()) {
+                target.add(result);
+            }
+        }
+        return target;
+    }
+    
+    /**
      * Marks this list as requiring sorting.
      */
     public void setUpdateNeeded() {
@@ -244,12 +315,34 @@ public class GeometryQueue {
         return comparator;
     }
     /**
+     * Gets the list of internal queues.
+     * <p>
+     * Do not modify.
+     * 
+     * @return 
+     */
+    public LinkedList<GeometryQueue> getInternalQueues() {
+        return internalQueues;
+    }
+    /**
      * Returns the number of elements in this GeometryList.
      *
      * @return Number of elements in the list
      */
     public int size() {
         return size;
+    }
+    /**
+     * Gets the number of geometries contained in this queue and internal queues.
+     * 
+     * @return 
+     */
+    public int getNumGeometries() {
+        int s = size;
+        for (GeometryQueue q : internalQueues) {
+            s += q.getNumGeometries();
+        }
+        return s;
     }
     /**
      * Returns the element at the given index.
@@ -273,6 +366,68 @@ public class GeometryQueue {
      */
     public boolean isPerspective() {
         return perspective;
+    }
+    /**
+     * Returns true if this queue or any internal queue contains geometry.
+     * 
+     * @return 
+     */
+    public boolean containsGeometry() {
+        if (size > 0) return true;
+        for (GeometryQueue q : internalQueues) {
+            if (q.containsGeometry()) return true;
+        }
+        return false;
+    }
+    /**
+     * 
+     * @return 
+     */
+    public int getAllocatedSpace() {
+        int space = geometries.length;
+        for (GeometryQueue q : internalQueues) {
+            space += q.getAllocatedSpace();
+        }
+        return space;
+    }
+
+    @Override
+    public Iterator<Geometry> iterator() {
+        return new GeometryIterator();
+    }
+    
+    private class GeometryIterator implements Iterator<Geometry> {
+        
+        private int index = 0;
+        private Iterator<GeometryQueue> queue;
+        private Iterator<Geometry> queueGeom;
+        
+        @Override
+        public boolean hasNext() {
+            if (index < size || (queueGeom != null && queueGeom.hasNext())) {
+                return true;
+            }
+            if (queue == null) {
+                queue = internalQueues.iterator();
+            }
+            while (queueGeom == null || !queueGeom.hasNext()) {
+                if (queue.hasNext()) {
+                    queueGeom = queue.next().iterator();
+                } else {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        @Override
+        public Geometry next() {
+            if (index < size) {
+                return geometries[index++];
+            }
+            return queueGeom.next();
+        }
+        
     }
     
 }

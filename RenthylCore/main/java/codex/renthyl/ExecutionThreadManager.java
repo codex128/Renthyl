@@ -70,11 +70,12 @@ public class ExecutionThreadManager {
     }
     
     public void start(FGRenderContext context, ExecutionQueueList queues) {
+        this.context = context;
         while (threads.size() < queues.size()) {
             threads.add(new ThreadExecutor(threads.size()));
         }
         locked.set(false);
-        for (int i = queues.size(); i >= 0; i--) {
+        for (int i = queues.size()-1; i >= 0; i--) {
             List<RenderModule> q = queues.getQueue(i);
             if (q != null) {
                 if (!locked.get() && i > 0) {

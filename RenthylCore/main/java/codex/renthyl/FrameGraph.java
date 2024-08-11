@@ -167,6 +167,9 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
     @Override
     public void pipelineRender(RenderManager rm, FGPipelineContext pContext, ViewPort vp, float tpf) {
         
+        rm.applyViewPort(vp);
+        context.target(rm, pContext, vp, tpf);
+        
         boolean updateNeeded = dynamic || layoutUpdateNeeded;
         ExecutionThreadManager threadManager = pContext.getThreadManager();
         GraphEventCapture cap = context.getGraphCapture();
@@ -175,8 +178,6 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
         }
         
         // prepare
-        rm.applyViewPort(vp);
-        context.target(rm, pContext, vp, tpf);
         if (cap != null) {
             cap.renderViewPort(context.getViewPort());
         }

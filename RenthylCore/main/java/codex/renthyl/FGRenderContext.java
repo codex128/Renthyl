@@ -31,6 +31,7 @@ package codex.renthyl;
 import codex.renthyl.resources.ResourceList;
 import codex.renthyl.util.FullScreenQuad;
 import codex.renthyl.debug.GraphEventCapture;
+import com.jme3.light.LightFilter;
 import com.jme3.material.Material;
 import com.jme3.material.RenderState;
 import com.jme3.opencl.CommandQueue;
@@ -85,6 +86,7 @@ public class FGRenderContext {
     private GeometryRenderHandler geomRender;
     private Predicate<Geometry> geomFilter;
     private RenderState renderState;
+    private LightFilter lightFilter;
     private int camWidth, camHeight;
     
     public FGRenderContext(FrameGraph frameGraph) {
@@ -132,6 +134,7 @@ public class FGRenderContext {
         geomRender = renderManager.getGeometryRenderHandler();
         geomFilter = renderManager.getRenderFilter();
         renderState = renderManager.getForcedRenderState();
+        lightFilter = renderManager.getLightFilter();
         camWidth = viewPort.getCamera().getWidth();
         camHeight = viewPort.getCamera().getHeight();
     }
@@ -146,7 +149,11 @@ public class FGRenderContext {
         renderManager.setRenderFilter(geomFilter);
         renderManager.setForcedRenderState(renderState);
         renderManager.getRenderer().setDepthRange(0, 1);
+        renderManager.setLightFilter(lightFilter);
         resizeCamera(camWidth, camHeight, true, false, false);
+        if (renderManager.getCurrentCamera() != viewPort.getCamera()) {
+            renderManager.setCamera(viewPort.getCamera(), false);
+        }
         if (viewPort.isClearColor()) {
             renderManager.getRenderer().setBackgroundColor(viewPort.getBackgroundColor());
         }

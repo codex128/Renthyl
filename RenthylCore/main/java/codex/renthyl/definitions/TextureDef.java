@@ -358,6 +358,14 @@ public class TextureDef <T extends Texture> extends AbstractResourceDef<T> imple
         this.minFilter = minFilter;
     }
     /**
+     * Sets the shadow compare mode.
+     * 
+     * @param shadowCompare 
+     */
+    public void setShadowCompare(Texture.ShadowCompareMode shadowCompare) {
+        this.shadowCompare = shadowCompare;
+    }
+    /**
      * Sets reallocation so that the target image does not need the same
      * color space as this definition.
      * 
@@ -481,6 +489,13 @@ public class TextureDef <T extends Texture> extends AbstractResourceDef<T> imple
      */
     public Texture.MinFilter getMinFilter() {
         return minFilter;
+    }
+    /**
+     * 
+     * @return 
+     */
+    public Texture.ShadowCompareMode getShadowCompare() {
+        return shadowCompare;
     }
     /**
      * 
