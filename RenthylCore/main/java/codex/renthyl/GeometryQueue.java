@@ -254,6 +254,34 @@ public class GeometryQueue implements Iterable<Geometry> {
     }
     
     /**
+     * Culls geometries from this queue and internal queues that are rejected
+     * by the filter.
+     * <p>
+     * Internal queues that no longer contain geometry as a result of this
+     * operation are removed.
+     * 
+     * @param filter
+     * @return 
+     */
+    public GeometryQueue cullLocal(Function<Geometry, Boolean> filter) {
+        int skip = 0;
+        for (int i = 0; i < size; i++) {
+            Geometry g = geometries[i-skip] = geometries[i];
+            if (!filter.apply(g)) {
+                geometries[i] = null;
+                skip++;
+            }
+        }
+        size -= skip;
+        for (Iterator<GeometryQueue> it = internalQueues.iterator(); it.hasNext();) {
+            if (it.next().cullLocal(filter).containsGeometry()) {
+                it.remove();
+            }
+        }
+        return this;
+    }
+    
+    /**
      * Marks this list as requiring sorting.
      */
     public void setUpdateNeeded() {

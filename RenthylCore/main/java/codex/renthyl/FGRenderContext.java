@@ -169,14 +169,14 @@ public class FGRenderContext {
      * Renders the given geometry list with the camera and render handler.
      * 
      * @param queue queue of geometry to render (not null)
-     * @param cam camera to render with (or null to render with the current viewport camera)
+     * @param queueSortCam camera to sort geometry by (or null to use viewport camera is used)
      * @param handler handler to render with (or null to render with {@link GeometryRenderHandler#DEFAULT})
      */
-    public void renderGeometry(GeometryQueue queue, Camera cam, GeometryRenderHandler handler) {
-        if (cam == null) {
-            cam = viewPort.getCamera();
+    public void renderGeometry(GeometryQueue queue, Camera queueSortCam, GeometryRenderHandler handler) {
+        if (queueSortCam == null) {
+            queueSortCam = viewPort.getCamera();
         }
-        queue.setCamera(cam);
+        queue.setCamera(queueSortCam);
         queue.sort();
         queue.render(renderManager, handler);
     }
@@ -219,6 +219,12 @@ public class FGRenderContext {
     public void resizeCamera(int w, int h, boolean fixAspect, boolean ortho, boolean force) {
         Camera cam = viewPort.getCamera();
         if (cam.resize(w, h, fixAspect, force)) {
+            renderManager.setCamera(cam, ortho);
+        }
+    }
+    
+    public void setCamera(Camera cam, boolean ortho, boolean force) {
+        if (force || renderManager.getCurrentCamera() != cam) {
             renderManager.setCamera(cam, ortho);
         }
     }

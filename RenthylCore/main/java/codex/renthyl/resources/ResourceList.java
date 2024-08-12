@@ -310,6 +310,12 @@ public class ResourceList {
         if (cap != null) cap.setResourceUndefined(resource.getIndex(), ticket.getName());
     }
     
+    public void setUndefined(ResourceTicket... tickets) {
+        for (ResourceTicket t : tickets) {
+            setUndefined(t);
+        }
+    }
+    
     /**
      * Marks the existing object held be the resource associated with the ticket as constant.
      * <p>
