@@ -108,6 +108,9 @@ public class RenderObjectMap {
         GraphEventCapture cap = context.getEventCapture();
         totalAllocations++;
         ResourceDef<T> def = resource.getDefinition();
+        if (def == null) {
+            throw new NullPointerException("Resource definition cannot be null in this context.");
+        }
         if (def.isUseExisting()) {
             // first try allocating a specific object, which is much faster
             if (allocateSpecificSync(resource)) {

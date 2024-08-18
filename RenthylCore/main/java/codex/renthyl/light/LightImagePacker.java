@@ -41,6 +41,7 @@ import com.jme3.texture.Image;
 import com.jme3.texture.Texture2D;
 import com.jme3.texture.image.ImageRaster;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -56,7 +57,7 @@ public class LightImagePacker {
     private final ColorRGBA tempColor = new ColorRGBA();
     private final LightFrustum frustum = new LightFrustum();
     private boolean hasAmbient = false;
-    private ArrayList<LinkedList<Integer>> tileIndices = new ArrayList<>();
+    private final ArrayList<LinkedList<Integer>> tileIndices = new ArrayList<>();
     
     public LightImagePacker() {}
     
@@ -104,10 +105,11 @@ public class LightImagePacker {
      * @param probes stores all LightProbes
      * @param cam camera for tile calculations
      * @param tileInfo tile demensions for tile calculations
+     * @param lightShadowIndexMap
      * @return number of directional, point, and spot lights
      */
-    public int packLights(LightList lights, ColorRGBA ambient,
-            List<LightProbe> probes, Camera cam, TiledRenderGrid tileInfo) {
+    public int packLights(LightList lights, ColorRGBA ambient, List<LightProbe> probes, Camera cam,
+            TiledRenderGrid tileInfo, HashMap<Light, Integer> lightShadowIndexMap) {
         ambient.set(0, 0, 0, 0);
         probes.clear();
         if (lights.size() == 0) {
@@ -142,7 +144,21 @@ public class LightImagePacker {
                 continue;
             }
             packedLight = true;
-            tempColor.set(l.getColor()).setAlpha(l.getType().getId());
+            int id = l.getType().getId();
+            if (lightShadowIndexMap != null) {
+                System.out.println("has light shadow index map");
+                if (id > 3) {
+                    throw new IllegalStateException("Light type id is larger than two bits: cannot pack shadow indices.");
+                }
+                Integer shadowIndex = lightShadowIndexMap.get(l);
+                System.out.println("  shadow index = "+shadowIndex);
+                if (shadowIndex != null) {
+                    // let zero represent no shadow data available for this light
+                    id += (shadowIndex + 1) << 2;
+                    //id += (shadowIndex << 2) + 1;
+                }
+            }
+            tempColor.set(l.getColor()).setAlpha(id);
             rasters[0].setPixel(i, 0, tempColor);
             switch (l.getType()) {
                 case Directional:
@@ -192,6 +208,7 @@ public class LightImagePacker {
         }
         return i;
     }
+    
     private void packLightIndices() {
         int componentIndex = 0;
         int xIndex = 0, yIndex = 0;

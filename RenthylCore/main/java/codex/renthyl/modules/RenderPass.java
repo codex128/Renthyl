@@ -214,7 +214,7 @@ public abstract class RenderPass extends RenderModule implements Savable {
      * @param ticket 
      */
     protected void reference(ResourceTicket ticket) {
-        resources.reference(index, ticket);
+        resources.reference(index, name, ticket);
     }
     /**
      * References each resource associated with the tickets.
@@ -222,7 +222,7 @@ public abstract class RenderPass extends RenderModule implements Savable {
      * @param tickets 
      */
     protected void reference(ResourceTicket... tickets) {
-        resources.reference(index, tickets);
+        resources.reference(index, name, tickets);
     }
     /**
      * References the resource associated with the ticket if the ticket is not
@@ -231,7 +231,7 @@ public abstract class RenderPass extends RenderModule implements Savable {
      * @param ticket
      */
     protected void referenceOptional(ResourceTicket ticket) {
-        resources.referenceOptional(index, ticket);
+        resources.referenceOptional(index, name, ticket);
     }
     /**
      * Optionally references each resource associated with the tickets.

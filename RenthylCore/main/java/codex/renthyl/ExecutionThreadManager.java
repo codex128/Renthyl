@@ -184,7 +184,7 @@ public class ExecutionThreadManager {
                     }
                 } catch (Exception ex) {
                     LOG.log(Level.SEVERE, "An exception occured while executing thread "+index, ex);
-                    error(false);
+                    error(true);
                 }
                 run = false;
                 notifyThreadComplete();

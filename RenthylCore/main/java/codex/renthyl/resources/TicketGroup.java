@@ -83,6 +83,9 @@ public class TicketGroup <T> {
         ResourceTicket[] temp = new ResourceTicket[array.length+1];
         System.arraycopy(array, 0, temp, 0, array.length);
         array = temp;
+        if (list) {
+            System.out.println("tickets in list: "+array.length);
+        }
         return (array[array.length-1] = create(array.length-1));
     }
     

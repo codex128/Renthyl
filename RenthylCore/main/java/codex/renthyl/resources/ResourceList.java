@@ -214,7 +214,7 @@ public class ResourceList {
         }
     }
     
-    private void reference(ModuleIndex index, ResourceTicket ticket, boolean optional) {
+    private void reference(ModuleIndex index, String user, ResourceTicket ticket, boolean optional) {
         boolean sync = !frameGraph.isAsync();
         if (optional && sync && !ResourceTicket.validate(ticket)) {
             return;
@@ -225,7 +225,7 @@ public class ResourceList {
             if (cap != null) cap.referenceResource(resource.getIndex(), ticket.getName());
         } else {
             // save for later, since the resource hasn't been declared yet
-            futureRefs.add(new FutureReference(index, ticket, optional));
+            futureRefs.add(new FutureReference(index, ticket, optional, user));
         }
     }
     
@@ -238,9 +238,10 @@ public class ResourceList {
      * 
      * @param passIndex render pass index
      * @param ticket 
+     * @param user 
      */
-    public void reference(ModuleIndex passIndex, ResourceTicket ticket) {
-        reference(passIndex, ticket, false);
+    public void reference(ModuleIndex passIndex, String user, ResourceTicket ticket) {
+        reference(passIndex, user, ticket, false);
     }
     
     /**
@@ -248,21 +249,23 @@ public class ResourceList {
      * is not null and does not have a negative world index.
      * 
      * @param passIndex render pass index
+     * @param user
      * @param ticket
      */
-    public void referenceOptional(ModuleIndex passIndex, ResourceTicket ticket) {
-        reference(passIndex, ticket, true);
+    public void referenceOptional(ModuleIndex passIndex, String user, ResourceTicket ticket) {
+        reference(passIndex, user, ticket, true);
     }
     
     /**
      * References resources associated with the tickets.
      * 
      * @param passIndex render pass index
+     * @param user
      * @param tickets 
      */
-    public void reference(ModuleIndex passIndex, ResourceTicket... tickets) {
+    public void reference(ModuleIndex passIndex, String user, ResourceTicket... tickets) {
         for (ResourceTicket t : tickets) {
-            reference(passIndex, t, false);
+            reference(passIndex, user, t, false);
         }
     }
     
@@ -270,11 +273,12 @@ public class ResourceList {
      * Optionally references resources associated with the tickets.
      * 
      * @param passIndex render pass index
+     * @param user
      * @param tickets 
      */
-    public void referenceOptional(ModuleIndex passIndex, ResourceTicket... tickets) {
+    public void referenceOptional(ModuleIndex passIndex, String user, ResourceTicket... tickets) {
         for (ResourceTicket t : tickets) {
-            reference(passIndex, t, true);
+            reference(passIndex, user, t, true);
         }
     }
     
@@ -446,6 +450,50 @@ public class ResourceList {
             throw new NullPointerException("Cannot acquire undefined resource.");
         }
         return acquire(resource, ticket);
+    }
+    
+    /**
+     * Merges the entry resource view into the target resource view, so that queries
+     * to the entry resource will find the target resource instead.
+     * <p>
+     * This is commonly used to cheaply "pass on" an input resource as an output
+     * resource, although there are two different resource views involved. This
+     * can fail if a reservation is present that would be overriden by merging.
+     * <p>
+     * If the target resource view is primitive, the resource is transferred to
+     * the entry resource view and no merging is performed (true is still returned).
+     * Reservations to the entry resource are not transferred.
+     * <p>
+     * In case of merging, the entry ticket's index is set to the target resource view's
+     * index, so that queries through that ticket are directed to the target resource.
+     * Queries outside the entry ticket will still point to the entry resource view,
+     * which would be incorrect.
+     * 
+     * @param <T>
+     * @param targetTicket points to the resource view that gets merged into
+     * @param entryTicket points to the resource view that is merged into the other
+     * @param force true to ignore reservations to the target resource when merging
+     * @return true if the merge was successful
+     * @throws NullPointerException if the target resource view is virtual or undefined
+     */
+    public <T> boolean merge(ResourceTicket<T> targetTicket, ResourceTicket<T> entryTicket, boolean force) {
+        ResourceView<T> target = locate(targetTicket);
+        ResourceView<T> entry = locate(entryTicket);
+        if (target.isVirtual() || target.isUndefined()) {
+            throw new NullPointerException("Target "+target+" must contain a resource to merge.");
+        }
+        if (target.isPrimitive()) {
+            // primitive resources can be directly transferred
+            entry.setPrimitive(target.getResource());
+            return true;
+        }
+        if (force || !target.getObject().isReservedWithin(entry.getLifeTime())) {
+            target.merge(entry);
+            // redirect queries from the old view to the new view
+            targetTicket.copyIndexTo(entryTicket);
+            return true;
+        }
+        return false;
     }
     
     /**
@@ -687,6 +735,9 @@ public class ResourceList {
     public void applyFutureReferences() {
         for (FutureReference ref : futureRefs) {
             if (!ref.optional || ResourceTicket.validate(ref.ticket)) {
+                if (!ResourceTicket.validate(ref.ticket)) {
+                    throw new NullPointerException(ref.ticket+" from "+ref.user+" is invalid.");
+                }
                 locate(ref.ticket).reference(ref.index);
             }
         }
@@ -767,11 +818,13 @@ public class ResourceList {
         public final ModuleIndex index;
         public final ResourceTicket ticket;
         public final boolean optional;
+        public final String user;
 
-        public FutureReference(ModuleIndex index, ResourceTicket ticket, boolean optional) {
+        public FutureReference(ModuleIndex index, ResourceTicket ticket, boolean optional, String user) {
             this.index = index;
             this.ticket = ticket;
             this.optional = optional;
+            this.user = user;
         }
         
     }

@@ -95,7 +95,18 @@ public class ResourceView <T> {
      * @return 
      */
     public boolean claimReadPermissions() {
-        return (def.isReadConcurrent() && released.get()) || released.getAndSet(false);
+        return ((def == null || def.isReadConcurrent()) && released.get()) || released.getAndSet(false);
+    }
+    
+    /**
+     * Merges the entry view's references and lifetime into this view.
+     * 
+     * @param entry 
+     */
+    public void merge(ResourceView<T> entry) {
+        refs += entry.refs+1;
+        lifetime.merge(entry.lifetime);
+        entry.refs = -1;
     }
     
     /**

@@ -97,7 +97,6 @@ public class SceneEnqueuePass extends RenderPass {
     private boolean runControlRender = true;
     private final HashMap<String, Queue> queues = new HashMap<>();
     private final LinkedList<SpatialWorldParam> worldParams = new LinkedList<>();
-    private final SpatialWorldParam<String> queueParam = SpatialWorldParam.renderQueueParam();
     private String defaultBucket = OPAQUE;
 
     /**
@@ -122,7 +121,7 @@ public class SceneEnqueuePass extends RenderPass {
             add(GUI, new GuiComparator(), DepthRange.FRONT, false);
             add(TRANSLUCENT, new TransparentComparator());
         }
-        worldParams.add(queueParam);
+        worldParams.add(SpatialWorldParam.RenderQueueParam);
     }
     
     @Override
@@ -199,7 +198,7 @@ public class SceneEnqueuePass extends RenderPass {
             p.apply(spatial);
         }
         // get target bucket
-        String value = queueParam.getWorldValue(spatial);
+        String value = SpatialWorldParam.RenderQueueParam.getWorldValue(spatial);
         if (value == null) {
             throw new NullPointerException("World render queue value was not calculated correctly.");
         }
@@ -254,6 +253,14 @@ public class SceneEnqueuePass extends RenderPass {
         }
         queues.put(name, new Queue(name, comparator, depth, perspective));
         return this;
+    }
+    
+    /**
+     * 
+     * @param param 
+     */
+    public void addWorldParam(SpatialWorldParam param) {
+        worldParams.add(param);
     }
     
     /**

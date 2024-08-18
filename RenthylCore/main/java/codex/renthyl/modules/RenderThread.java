@@ -30,7 +30,6 @@ package codex.renthyl.modules;
 
 import codex.renthyl.ExecutionQueueList;
 import codex.renthyl.FGRenderContext;
-import codex.renthyl.FrameGraph;
 import codex.renthyl.client.GraphSource;
 import com.jme3.export.InputCapsule;
 import com.jme3.export.JmeExporter;

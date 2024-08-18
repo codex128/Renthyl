@@ -45,7 +45,7 @@ import codex.renthyl.modules.ModuleIndex;
 public class TimeFrame {
     
     private int thread;
-    private int queue, length;
+    private int start, length;
     private boolean async = false;
     
     /**
@@ -59,9 +59,9 @@ public class TimeFrame {
      */
     public TimeFrame(ModuleIndex index, int length) {
         this.thread = index.getThreadIndex();
-        this.queue = index.getQueueIndex();
+        this.start = index.getQueueIndex();
         this.length = length;
-        if (this.queue < 0) {
+        if (this.start < 0) {
             throw new IllegalArgumentException("Pass index cannot be negative.");
         }
         if (this.length < 0) {
@@ -78,7 +78,7 @@ public class TimeFrame {
         if (passIndex.getThreadIndex() != thread) {
             async = true;
         } else {
-            length = Math.max(length, passIndex.getQueueIndex()-this.queue);
+            length = Math.max(length, passIndex.getQueueIndex()-start);
         }
     }
     /**
@@ -92,10 +92,24 @@ public class TimeFrame {
             target = new TimeFrame();
         }
         target.thread = thread;
-        target.queue = queue;
+        target.start = start;
         target.length = length;
         target.async = async;
         return target;
+    }
+    /**
+     * Merges the given timeframe into this timeframe.
+     * 
+     * @param frame 
+     */
+    public void merge(TimeFrame frame) {
+        int end = Math.max(start+length, frame.start+frame.length);
+        start = Math.min(start, frame.start);
+        if (frame.isAsync() || thread != frame.thread) {
+            async = true;
+        } else {
+            length = end-start;
+        }
     }
     
     /**
@@ -112,7 +126,7 @@ public class TimeFrame {
      * @return 
      */
     public int getStartQueueIndex() {
-        return queue;
+        return start;
     }
     /**
      * Gets the length.
@@ -128,7 +142,7 @@ public class TimeFrame {
      * @return 
      */
     public int getEndQueueIndex() {
-        return queue+length;
+        return start+length;
     }
     /**
      * Returns true if this timeframe is asynchronous.
@@ -148,7 +162,7 @@ public class TimeFrame {
      * @return 
      */
     public boolean overlaps(TimeFrame time) {
-        return queue <= time.queue+time.length && queue+length >= time.queue;
+        return start <= time.start+time.length && start+length >= time.start;
     }
     /**
      * Returns true if this time frame includes the given index.
@@ -157,7 +171,7 @@ public class TimeFrame {
      * @return 
      */
     public boolean includes(int index) {
-        return queue <= index && queue+length >= index;
+        return start <= index && start+length >= index;
     }
     
 }

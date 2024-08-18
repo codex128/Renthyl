@@ -53,7 +53,7 @@ import java.util.stream.Stream;
 public abstract class RenderModule implements Connectable, ResourceUser, Savable {
     
     protected FrameGraph frameGraph;
-    protected String name = "RenderModule";
+    protected String name;
     protected RenderContainer parent;
     protected final ModuleIndex index = new ModuleIndex();
     protected final LinkedList<ResourceTicket> inputs = new LinkedList<>();
@@ -115,7 +115,7 @@ public abstract class RenderModule implements Connectable, ResourceUser, Savable
     }
     @Override
     public ResourceTicket addTicketListEntry(String groupName) {
-        TicketGroup g = getGroup(name, true);
+        TicketGroup g = getGroup(groupName, true);
         g.requireAsList(true);
         return addInput(g.add());
     }
@@ -214,6 +214,7 @@ public abstract class RenderModule implements Connectable, ResourceUser, Savable
             group.getArray()[i] = addOutput(group.create(i));
         }
         groups.put(name, group);
+        System.out.println("create group \""+name+"\" of size "+group.getArray().length);
         return group.getArray();
     }
     /**
@@ -249,6 +250,9 @@ public abstract class RenderModule implements Connectable, ResourceUser, Savable
     public void initializeModule(FrameGraph frameGraph) {
         if (this.frameGraph != null) {
             throw new IllegalStateException("Module already initialized.");
+        }
+        if (name == null) {
+            name = getClass().getSimpleName();
         }
         this.frameGraph = frameGraph;
         this.frameGraph.setLayoutUpdateNeeded();

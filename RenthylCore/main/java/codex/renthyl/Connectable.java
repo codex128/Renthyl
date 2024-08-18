@@ -204,6 +204,34 @@ public interface Connectable {
     }
     
     /**
+     * 
+     * 
+     * @param source
+     * @param sourceGroup
+     * @param targetGroup
+     * @param start
+     * @param length 
+     */
+    public default void makeGroupInputToList(Connectable source, String sourceGroup, String targetGroup, int start, int length) {
+        ResourceTicket[] srcGroupArray = source.getGroup(sourceGroup, true).getArray();
+        length = Math.min(start+length, srcGroupArray.length);
+        for (int i = start; i < length; i++) {
+            ResourceTicket t = addTicketListEntry(targetGroup);
+            t.setSource(srcGroupArray[i]);
+        }
+    }
+    
+    /**
+     * 
+     * @param source
+     * @param sourceGroup
+     * @param targetGroup 
+     */
+    public default void makeGroupInputToList(Connectable source, String sourceGroup, String targetGroup) {
+        makeGroupInputToList(source, sourceGroup, targetGroup, 0, Integer.MAX_VALUE);
+    }
+    
+    /**
      * Disconnects the named target (input) ticket from its source.
      * 
      * @param targetTicket 

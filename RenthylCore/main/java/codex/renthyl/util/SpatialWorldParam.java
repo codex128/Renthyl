@@ -15,33 +15,30 @@ import com.jme3.scene.Spatial;
 public abstract class SpatialWorldParam <T> {
     
     protected T start, inherit;
-    protected String resultUserData;
     
-    public SpatialWorldParam(T start, T inherit, String resultUserData) {
+    public SpatialWorldParam(T start, T inherit) {
         this.start = start;
         this.inherit = inherit;
-        this.resultUserData = resultUserData;
     }
     
     protected abstract T getLocalValue(Spatial spatial);
+    protected abstract void saveWorldValue(Spatial spatial, T value);
+    public abstract T getWorldValue(Spatial spatial);
     
     public void apply(Spatial spatial) {
         T value = getLocalValue(spatial);
         if (spatial.getParent() != null) {
-            T parentVal = spatial.getParent().getUserData(resultUserData);
+            T parentVal = getWorldValue(spatial.getParent());
             if (parentVal != null && isInherit(value)) {
-                spatial.setUserData(resultUserData, parentVal);
+                saveWorldValue(spatial, parentVal);
                 return;
             }
         }
         if (!isInherit(value)) {
-            spatial.setUserData(resultUserData, value);
+            saveWorldValue(spatial, value);
         } else {
-            spatial.setUserData(resultUserData, start);
+            saveWorldValue(spatial, start);
         }
-    }
-    public T getWorldValue(Spatial spatial) {
-        return spatial.getUserData(resultUserData);
     }
     
     private boolean isInherit(T value) {
@@ -54,25 +51,11 @@ public abstract class SpatialWorldParam <T> {
     public T getInherit() {
         return inherit;
     }
-    public String getResultUserDataName() {
-        return resultUserData;
-    }
     
-    public static SpatialWorldParam<String> renderQueueParam() {
-        return new Queue();
-    }
-    public static SpatialWorldParam<RenderQueue.ShadowMode> shadowModeParam() {
-        return new Shadow();
-    }
-    
-    public static class Queue extends SpatialWorldParam<String> {
+    public static final SpatialWorldParam<String> RenderQueueParam = new SpatialWorldParam<>("Opaque", "Inherit") {
         
-        public static final String USERDATA = "RenderQueue";
-        public static final String RESULT = "ResultRenderQueue";
-        
-        public Queue() {
-            super("Opaque", "Inherit", RESULT);
-        }
+        private static final String USERDATA = "RenderQueue";
+        private static final String RESULT = "ResultRenderQueue";
 
         @Override
         protected String getLocalValue(Spatial spatial) {
@@ -82,22 +65,35 @@ public abstract class SpatialWorldParam <T> {
             }
             return value;
         }
+        @Override
+        protected void saveWorldValue(Spatial spatial, String value) {
+            spatial.setUserData(RESULT, value);
+        }
+        @Override
+        public String getWorldValue(Spatial spatial) {
+            return spatial.getUserData(RESULT);
+        }
         
-    }
-    public static class Shadow extends SpatialWorldParam<RenderQueue.ShadowMode> {
+    };
+    public static final SpatialWorldParam<RenderQueue.ShadowMode> ShadowModeParam
+            = new SpatialWorldParam<>(RenderQueue.ShadowMode.Off, RenderQueue.ShadowMode.Inherit) {
 
         public static final String RESULT = "ResultShadowMode";
-        
-        public Shadow() {
-            super(RenderQueue.ShadowMode.Off, RenderQueue.ShadowMode.Inherit, RESULT);
-        }
 
         @Override
         protected RenderQueue.ShadowMode getLocalValue(Spatial spatial) {
             return spatial.getLocalShadowMode();
         }
+        @Override
+        protected void saveWorldValue(Spatial spatial, RenderQueue.ShadowMode value) {
+            spatial.setUserData(RESULT, value.name());
+        }
+        @Override
+        public RenderQueue.ShadowMode getWorldValue(Spatial spatial) {
+            return Enum.valueOf(RenderQueue.ShadowMode.class, spatial.getUserData(RESULT));
+        }
         
-    }
+    };
     
     
 }

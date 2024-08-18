@@ -49,6 +49,7 @@ import com.jme3.renderer.RenderManager;
 import com.jme3.renderer.RendererException;
 import com.jme3.renderer.pipeline.RenderPipeline;
 import com.jme3.renderer.ViewPort;
+import com.jme3.scene.Node;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -113,6 +114,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
     private boolean rendered = false;
     private boolean debugPrint = false;
     private int nextModuleId = 0;
+    private Node debugNode;
     
     /**
      * Creates a new blank framegraph.
@@ -646,6 +648,18 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
      */
     public String getDocumantationAsset() {
         return docAsset;
+    }
+    
+    /**
+     * Gets the node used for debug visualization.
+     * 
+     * @return 
+     */
+    public Node getDebugNode() {
+        if (debugNode == null) {
+            debugNode = new Node("FrameGraphDebugNode");
+        }
+        return debugNode;
     }
     
     /**
