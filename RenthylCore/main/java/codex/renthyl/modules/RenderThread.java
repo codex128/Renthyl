@@ -28,6 +28,7 @@
  */
 package codex.renthyl.modules;
 
+import codex.boost.export.SavableObject;
 import codex.renthyl.ExecutionQueueList;
 import codex.renthyl.FGRenderContext;
 import codex.renthyl.client.GraphSource;
@@ -35,7 +36,6 @@ import com.jme3.export.InputCapsule;
 import com.jme3.export.JmeExporter;
 import com.jme3.export.JmeImporter;
 import com.jme3.export.OutputCapsule;
-import com.jme3.export.SavableObject;
 import java.io.IOException;
 
 /**
@@ -68,13 +68,13 @@ public class RenderThread extends RenderContainer<RenderModule> {
     public void write(JmeExporter ex) throws IOException {
         super.write(ex);
         OutputCapsule out = ex.getCapsule(this);
-        out.write(new SavableObject(threadIndexSource, true), "threadIndexSource", SavableObject.NULL);
+        out.write(new SavableObject(threadIndexSource), "threadIndexSource", SavableObject.NULL);
     }
     @Override
     public void read(JmeImporter im) throws IOException {
         super.read(im);
         InputCapsule in = im.getCapsule(this);
-        threadIndexSource = in.readSavableObject("threadIndexSource", GraphSource.class);
+        threadIndexSource = SavableObject.read(in, "threadIndexSource", GraphSource.class);
     }
 
     /**

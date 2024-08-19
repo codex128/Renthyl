@@ -28,6 +28,7 @@
  */
 package codex.renthyl.modules;
 
+import codex.boost.export.SavableObject;
 import codex.renthyl.FGRenderContext;
 import codex.renthyl.FrameGraph;
 import codex.renthyl.resources.ResourceTicket;
@@ -124,7 +125,7 @@ public class Attribute <T> extends RenderPass {
     public void write(JmeExporter ex) throws IOException {
         super.write(ex);
         OutputCapsule out = ex.getCapsule(this);
-        out.writeFromCollection(targets, "targets", true);
+        SavableObject.writeFromCollection(out, targets, "targets");
         if (source != null && source instanceof Savable) {
             out.write((Savable)source, "source", NullSavable.INSTANCE);
         }
@@ -136,7 +137,7 @@ public class Attribute <T> extends RenderPass {
     public void read(JmeImporter im) throws IOException {
         super.read(im);
         InputCapsule in = im.getCapsule(this);
-        in.readToCollection("targets", targets);
+        SavableObject.readToCollection(in, "targets", targets);
         source = (GraphSource<T>)in.readSavable("source", null);
         defaultValue = (T)in.readSavable("default", null);
     }

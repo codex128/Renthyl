@@ -28,13 +28,13 @@
  */
 package codex.renthyl.export;
 
+import codex.boost.export.SavableObject;
 import codex.renthyl.FrameGraph;
 import com.jme3.export.InputCapsule;
 import com.jme3.export.JmeExporter;
 import com.jme3.export.JmeImporter;
 import com.jme3.export.OutputCapsule;
 import com.jme3.export.Savable;
-import com.jme3.export.SavableObject;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -75,7 +75,7 @@ public class FrameGraphData implements Savable {
         InputCapsule in = im.getCapsule(this);
         name = in.readString("name", "FrameGraph");
         dynamic = in.readBoolean("dynamic", false);
-        modules = in.readSavable("modules", ModuleGraphData.class, null);
+        modules = SavableObject.readSavable(in, "modules", ModuleGraphData.class, null);
         settings = in.readSavableArrayList("settings", new ArrayList<>());
     }
 

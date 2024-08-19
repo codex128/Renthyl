@@ -28,13 +28,13 @@
  */
 package codex.renthyl.client;
 
+import codex.boost.export.SavableObject;
 import codex.renthyl.FrameGraph;
 import com.jme3.export.InputCapsule;
 import com.jme3.export.JmeExporter;
 import com.jme3.export.JmeImporter;
 import com.jme3.export.OutputCapsule;
 import com.jme3.export.Savable;
-import com.jme3.export.SavableObject;
 import com.jme3.renderer.ViewPort;
 import java.io.IOException;
 
@@ -70,7 +70,7 @@ public class GraphValue <T> implements GraphSource<T>, GraphTarget<T>, Savable {
     @Override
     public void read(JmeImporter im) throws IOException {
         InputCapsule in = im.getCapsule(this);
-        value = (T)in.readSavableObject("value", SavableObject.NULL).getObject();
+        value = (T)SavableObject.read(in, "value").getObject();
     }
     
     /**

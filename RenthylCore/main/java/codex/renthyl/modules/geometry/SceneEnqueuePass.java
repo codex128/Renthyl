@@ -28,6 +28,7 @@
  */
 package codex.renthyl.modules.geometry;
 
+import codex.boost.export.SavableObject;
 import codex.renthyl.modules.RenderPass;
 import codex.renthyl.FGRenderContext;
 import codex.renthyl.FrameGraph;
@@ -333,8 +334,8 @@ public class SceneEnqueuePass extends RenderPass {
         public void read(JmeImporter im) throws IOException {
             InputCapsule in = im.getCapsule(this);
             name = in.readString("name", "Opaque");
-            queue = new GeometryQueue(in.readSavable("comparator", GeometryComparator.class, NULL_COMPARATOR));
-            queue.setDepth(in.readSavable("depth", DepthRange.class, DepthRange.IDENTITY));
+            queue = new GeometryQueue(SavableObject.readSavable(in, "comparator", GeometryComparator.class, NULL_COMPARATOR));
+            queue.setDepth(SavableObject.readSavable(in, "depth", DepthRange.class, DepthRange.IDENTITY));
             queue.setPerspective(in.readBoolean("perspective", true));
         }
         

@@ -28,6 +28,7 @@
  */
 package codex.renthyl;
 
+import codex.boost.export.SavableObject;
 import codex.renthyl.modules.ModuleIndex;
 import codex.renthyl.resources.ResourceList;
 import codex.renthyl.asset.FrameGraphKey;
@@ -42,7 +43,6 @@ import codex.renthyl.modules.RenderModule;
 import codex.renthyl.modules.RenderPass;
 import codex.renthyl.modules.RenderThread;
 import com.jme3.asset.AssetManager;
-import com.jme3.export.SavableObject;
 import com.jme3.opencl.CommandQueue;
 import com.jme3.opencl.Context;
 import com.jme3.renderer.RenderManager;

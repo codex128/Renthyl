@@ -28,6 +28,7 @@
  */
 package codex.renthyl.modules.geometry;
 
+import codex.boost.export.SavableObject;
 import codex.renthyl.FGRenderContext;
 import codex.renthyl.FrameGraph;
 import codex.renthyl.GeometryQueue;
@@ -138,7 +139,7 @@ public class GeometryPass extends RenderPass {
     public void read(JmeImporter im) throws IOException {
         super.read(im);
         InputCapsule in = im.getCapsule(this);
-        depth.set(in.readSavable("depth", DepthRange.class, DepthRange.IDENTITY));
+        depth.set(SavableObject.readSavable(in, "depth", DepthRange.class, DepthRange.IDENTITY));
         perspective = in.readBoolean("perspective", true);
     }
     

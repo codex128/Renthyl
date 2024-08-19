@@ -28,13 +28,13 @@
  */
 package codex.renthyl.client;
 
+import codex.boost.export.SavableObject;
 import codex.renthyl.FrameGraph;
 import com.jme3.export.InputCapsule;
 import com.jme3.export.JmeExporter;
 import com.jme3.export.JmeImporter;
 import com.jme3.export.OutputCapsule;
 import com.jme3.export.Savable;
-import com.jme3.export.SavableObject;
 import com.jme3.renderer.ViewPort;
 import java.io.IOException;
 
@@ -113,7 +113,7 @@ public class GraphSetting <T> implements GraphSource<T>, GraphTarget<T>, Savable
         InputCapsule in = im.getCapsule(this);
         name = in.readString("name", null);
         filter = (ViewPortFilter)in.readSavable("filter", new DefaultSavableFilter());
-        defValue = (T)in.readSavableObject("defValue", SavableObject.NULL).getObject();
+        defValue = (T)SavableObject.read(in, "defValue").getObject();
     }
     
     /**

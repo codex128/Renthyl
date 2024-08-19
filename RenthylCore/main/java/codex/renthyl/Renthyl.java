@@ -4,7 +4,6 @@
  */
 package codex.renthyl;
 
-import codex.renthyl.material.TechniqueLoader;
 import codex.renthyl.modules.geometry.OutputGeometryPass;
 import codex.renthyl.modules.geometry.QueueMergePass;
 import codex.renthyl.modules.geometry.SceneEnqueuePass;
@@ -81,7 +80,6 @@ public class Renthyl {
         
         AssetManager assetManager = app.getAssetManager();
         assetManager.registerLoader(BinaryLoader.class, "fg");
-        assetManager.registerLoader(TechniqueLoader.class, "fgmt");
         
     }
     

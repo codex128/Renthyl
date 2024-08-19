@@ -28,6 +28,7 @@
  */
 package codex.renthyl.modules;
 
+import codex.boost.export.SavableObject;
 import codex.renthyl.FGRenderContext;
 import codex.renthyl.FrameGraph;
 import codex.renthyl.resources.ResourceTicket;
@@ -121,16 +122,16 @@ public class GroupAttribute extends RenderPass {
         super.write(ex);
         OutputCapsule out = ex.getCapsule(this);
         out.write(groupSize, "groupSize", 2);
-        out.writeFromCollection(sources, "sources", true);
-        out.writeFromCollection(targets, "targets", true);
+        SavableObject.writeFromCollection(out, sources, "sources");
+        SavableObject.writeFromCollection(out, targets, "targets");
     }
     @Override
     public void read(JmeImporter im) throws IOException {
         super.read(im);
         InputCapsule in = im.getCapsule(this);
         groupSize = in.readInt("groupSize", 2);
-        in.readToCollection("sources", sources);
-        in.readToCollection("targets", targets);
+        SavableObject.readToCollection(in, "sources", sources);
+        SavableObject.readToCollection(in, "targets", targets);
     }
     
     /**

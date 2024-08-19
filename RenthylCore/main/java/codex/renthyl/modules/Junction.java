@@ -28,6 +28,7 @@
  */
 package codex.renthyl.modules;
 
+import codex.boost.export.SavableObject;
 import codex.renthyl.FGRenderContext;
 import codex.renthyl.FrameGraph;
 import codex.renthyl.resources.ResourceTicket;
@@ -35,10 +36,7 @@ import codex.renthyl.client.GraphSource;
 import com.jme3.export.InputCapsule;
 import com.jme3.export.JmeExporter;
 import com.jme3.export.JmeImporter;
-import com.jme3.export.NullSavable;
 import com.jme3.export.OutputCapsule;
-import com.jme3.export.Savable;
-import com.jme3.export.SavableObject;
 import java.io.IOException;
 
 /**
@@ -114,7 +112,7 @@ public class Junction <T> extends RenderPass {
         out.write(length, "length", 2);
         out.write(groupSize, "groupSize", 1);
         out.write(defaultIndex, "defaultIndex", 0);
-        out.write(new SavableObject(source, true), "source", SavableObject.NULL);
+        out.write(new SavableObject(source), "source", SavableObject.NULL);
     }
     @Override
     public void read(JmeImporter im) throws IOException {
@@ -123,7 +121,7 @@ public class Junction <T> extends RenderPass {
         length = in.readInt("length", 2);
         groupSize = in.readInt("groupSize", 1);
         defaultIndex = in.readInt("defaultIndex", 0);
-        source = in.readSavableObject("source", GraphSource.class);
+        source = SavableObject.read(in, "source", GraphSource.class);
     }
     
     private void connect(int i) {

@@ -28,6 +28,7 @@
  */
 package codex.renthyl.export;
 
+import codex.boost.export.SavableObject;
 import codex.renthyl.Connectable;
 import codex.renthyl.resources.ResourceTicket;
 import codex.renthyl.modules.RenderModule;
@@ -94,7 +95,7 @@ public class ModuleGraphData implements Savable {
     @Override
     public void read(JmeImporter im) throws IOException {
         InputCapsule in = im.getCapsule(this);
-        rootModule = in.readSavable("root", RenderModule.class, null);
+        rootModule = SavableObject.readSavable(in, "root", RenderModule.class, null);
         final ArrayList<SavableConnection> connections = in.readSavableArrayList("connections", DEF_CONNECTIONS);
         final HashMap<Integer, RenderModule> registry = new HashMap<>();
         rootModule.traverse(m -> { if (registry.put(m.getId(), m) != null)

@@ -52,7 +52,7 @@ public abstract class SpatialWorldParam <T> {
         return inherit;
     }
     
-    public static final SpatialWorldParam<String> RenderQueueParam = new SpatialWorldParam<>("Opaque", "Inherit") {
+    public static final SpatialWorldParam<String> RenderQueueParam = new SpatialWorldParam<String>("Opaque", "Inherit") {
         
         private static final String USERDATA = "RenderQueue";
         private static final String RESULT = "ResultRenderQueue";
@@ -76,7 +76,7 @@ public abstract class SpatialWorldParam <T> {
         
     };
     public static final SpatialWorldParam<RenderQueue.ShadowMode> ShadowModeParam
-            = new SpatialWorldParam<>(RenderQueue.ShadowMode.Off, RenderQueue.ShadowMode.Inherit) {
+            = new SpatialWorldParam<RenderQueue.ShadowMode>(RenderQueue.ShadowMode.Off, RenderQueue.ShadowMode.Inherit) {
 
         public static final String RESULT = "ResultShadowMode";
 
