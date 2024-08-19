@@ -21,6 +21,7 @@ Renthyl is still under development and should not be used for production yet. It
 2. Download dependencies
    * [JMonkeyEngine](https://github.com/codex128/jmonkeyengine/tree/pipelineApi) (experimental branch).
    * [Boost](https://github.com/codex128/Boost) (master branch)
+   * [RenthylPlus](https://github.com/codex128/RenthylPlus) (optional, master branch)
    * Java JDK8
 
 3. Initialize Renthyl in your JMonkeyEngine application.
