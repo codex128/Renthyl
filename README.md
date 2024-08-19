@@ -1,6 +1,7 @@
 Renthyl is a modular FrameGraph-based rendering pipeline designed with efficiency in mind.
 
-:warning: **Warning!** :warning:<br>Renthyl is still under development and should not be used for production yet.
+:warning: **Warning!** :warning:<br>
+Renthyl is still under development and should not be used for production yet. It additionally uses libraries that have not been deployed.
 
 ## Features
 
@@ -18,7 +19,8 @@ Renthyl is a modular FrameGraph-based rendering pipeline designed with efficienc
 1. Download Renthyl (including assets).
 
 2. Download dependencies
-   * [JMonkeyEngine experimental branch](https://github.com/codex128/jmonkeyengine/tree/pipelineApi).
+   * [JMonkeyEngine](https://github.com/codex128/jmonkeyengine/tree/pipelineApi) (experimental branch).
+   * [Boost](https://github.com/codex128/Boost) (master branch)
    * Java JDK8
 
 3. Initialize Renthyl in your JMonkeyEngine application.
