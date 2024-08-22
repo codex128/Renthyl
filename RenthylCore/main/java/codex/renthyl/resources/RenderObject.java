@@ -56,6 +56,8 @@ public class RenderObject <T> {
     private boolean constant = false;
     private boolean inspect = false;
     private boolean prioritized = false;
+    private final boolean allowCasualAllocation;
+    private final boolean allowReservations;
     private Consumer disposer;
     
     /**
@@ -71,6 +73,8 @@ public class RenderObject <T> {
         }
         this.object = object;
         this.timeoutDuration = def.getStaticTimeout();
+        this.allowCasualAllocation = def.isAllowCasualAllocation();
+        this.allowReservations = def.isAllowReservations();
         if (this.timeoutDuration < 0) {
             this.timeoutDuration = timeout;
         }
@@ -160,7 +164,9 @@ public class RenderObject <T> {
      * @param index 
      */
     public void reserve(ModuleIndex index) {
-        reservations.add(new Reservation(index));
+        if (allowReservations) {
+            reservations.add(new Reservation(index));
+        }
     }
     /**
      * Disposes the internal object.
@@ -178,7 +184,7 @@ public class RenderObject <T> {
      * @return true if a reservation was claimed.
      */
     public boolean claimReservation(ModuleIndex index) {
-        for (Reservation r : reservations) {
+        if (allowReservations) for (Reservation r : reservations) {
             if (r.claim(index)) return true;
         }
         return false;
@@ -191,7 +197,7 @@ public class RenderObject <T> {
      * @return true if this object is reserved within the timeframe
      */
     public boolean isReservedWithin(TimeFrame frame) {
-        for (Reservation r : reservations) {
+        if (allowReservations) for (Reservation r : reservations) {
             if (r.violates(frame)) return true;
         }
         return false;
@@ -255,6 +261,23 @@ public class RenderObject <T> {
      */
     public boolean isConstant() {
         return constant;
+    }
+    /**
+     * Returns true if this object can be reallocated casually
+     * without an object id.
+     * 
+     * @return 
+     */
+    public boolean isAllowCasualAllocation() {
+        return allowCasualAllocation;
+    }
+    /**
+     * Returns true if this object can be reserved.
+     * 
+     * @return 
+     */
+    public boolean isAllowReservations() {
+        return allowReservations;
     }
     
     /**

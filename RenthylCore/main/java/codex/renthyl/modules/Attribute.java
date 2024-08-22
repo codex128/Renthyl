@@ -126,12 +126,8 @@ public class Attribute <T> extends RenderPass {
         super.write(ex);
         OutputCapsule out = ex.getCapsule(this);
         SavableObject.writeFromCollection(out, targets, "targets");
-        if (source != null && source instanceof Savable) {
-            out.write((Savable)source, "source", NullSavable.INSTANCE);
-        }
-        if (defaultValue != null && defaultValue instanceof Savable) {
-            out.write((Savable)defaultValue, "default", NullSavable.INSTANCE);
-        }
+        out.write(new SavableObject(source), "source", SavableObject.NULL);
+        out.write(new SavableObject(defaultValue), "default", SavableObject.NULL);
     }
     @Override
     public void read(JmeImporter im) throws IOException {

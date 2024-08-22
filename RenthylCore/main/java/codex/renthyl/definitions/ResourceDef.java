@@ -102,6 +102,25 @@ public interface ResourceDef <T> {
     }
     
     /**
+     * Returns true if reallocation of this definition's resource is allowed
+     * casually without a specific object id.
+     * 
+     * @return 
+     */
+    public default boolean isAllowCasualAllocation() {
+        return true;
+    }
+    
+    /**
+     * Returns true if reserving this definition's resource is allowed.
+     * 
+     * @return 
+     */
+    public default boolean isAllowReservations() {
+        return true;
+    }
+    
+    /**
      * Returns true if the resource should be disposed after being
      * released and having no users.
      * 

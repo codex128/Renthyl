@@ -146,16 +146,14 @@ public class LightImagePacker {
             packedLight = true;
             int id = l.getType().getId();
             if (lightShadowIndexMap != null) {
-                System.out.println("has light shadow index map");
+                // allow 2 bits for light type
                 if (id > 3) {
                     throw new IllegalStateException("Light type id is larger than two bits: cannot pack shadow indices.");
                 }
                 Integer shadowIndex = lightShadowIndexMap.get(l);
-                System.out.println("  shadow index = "+shadowIndex);
                 if (shadowIndex != null) {
                     // let zero represent no shadow data available for this light
                     id += (shadowIndex + 1) << 2;
-                    //id += (shadowIndex << 2) + 1;
                 }
             }
             tempColor.set(l.getColor()).setAlpha(id);

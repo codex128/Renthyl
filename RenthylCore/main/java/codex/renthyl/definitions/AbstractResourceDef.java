@@ -41,6 +41,8 @@ public abstract class AbstractResourceDef <T> implements ResourceDef<T> {
     private Consumer<T> disposalMethod;
     private int staticTimeout = -1;
     private boolean useExisting = true;
+    private boolean allowCasualAllocation = true;
+    private boolean allowReservations = true;
     private boolean disposeOnRelease = false;
     private boolean readConcurrent = true;
     
@@ -57,6 +59,16 @@ public abstract class AbstractResourceDef <T> implements ResourceDef<T> {
     @Override
     public boolean isUseExisting() {
         return useExisting;
+    }
+    
+    @Override
+    public boolean isAllowCasualAllocation() {
+        return allowCasualAllocation;
+    }
+    
+    @Override
+    public boolean isAllowReservations() {
+        return allowReservations;
     }
     
     @Override
@@ -103,6 +115,29 @@ public abstract class AbstractResourceDef <T> implements ResourceDef<T> {
      */
     public void setUseExisting(boolean useExisting) {
         this.useExisting = useExisting;
+    }
+
+    /**
+     * Allows this definitions resource to be reallocated casually
+     * without a specific object id.
+     * <p>
+     * default=true
+     * 
+     * @param allowCasualAllocation 
+     */
+    public void setAllowCasualAllocation(boolean allowCasualAllocation) {
+        this.allowCasualAllocation = allowCasualAllocation;
+    }
+
+    /**
+     * Sets this definition's resource to allow itself to be reserved.
+     * <p>
+     * default=true
+     * 
+     * @param allowReservations 
+     */
+    public void setAllowReservations(boolean allowReservations) {
+        this.allowReservations = allowReservations;
     }
     
     /**

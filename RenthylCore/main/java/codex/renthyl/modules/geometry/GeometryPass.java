@@ -35,12 +35,12 @@ import codex.renthyl.GeometryQueue;
 import codex.renthyl.resources.ResourceTicket;
 import codex.renthyl.definitions.TextureDef;
 import codex.renthyl.modules.RenderPass;
+import codex.boost.render.DepthRange;
 import com.jme3.export.InputCapsule;
 import com.jme3.export.JmeExporter;
 import com.jme3.export.JmeImporter;
 import com.jme3.export.OutputCapsule;
 import com.jme3.math.ColorRGBA;
-import com.jme3.renderer.DepthRange;
 import com.jme3.texture.FrameBuffer;
 import com.jme3.texture.Image;
 import com.jme3.texture.Texture2D;
@@ -72,7 +72,7 @@ public class GeometryPass extends RenderPass {
     private boolean perspective;
     
     public GeometryPass() {
-        this(DepthRange.IDENTITY, true);
+        this(DepthRange.NORMAL, true);
     }
     public GeometryPass(DepthRange depth) {
         this(depth, true);
@@ -132,14 +132,14 @@ public class GeometryPass extends RenderPass {
     public void write(JmeExporter ex) throws IOException {
         super.write(ex);
         OutputCapsule out = ex.getCapsule(this);
-        out.write(depth, "depth", DepthRange.IDENTITY);
+        out.write(depth, "depth", DepthRange.NORMAL);
         out.write(perspective, "perspective", true);
     }
     @Override
     public void read(JmeImporter im) throws IOException {
         super.read(im);
         InputCapsule in = im.getCapsule(this);
-        depth.set(SavableObject.readSavable(in, "depth", DepthRange.class, DepthRange.IDENTITY));
+        depth.set(SavableObject.readSavable(in, "depth", DepthRange.class, DepthRange.NORMAL));
         perspective = in.readBoolean("perspective", true);
     }
     

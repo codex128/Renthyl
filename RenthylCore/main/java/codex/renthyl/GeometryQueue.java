@@ -28,7 +28,13 @@
  */
 package codex.renthyl;
 
-import com.jme3.renderer.DepthRange;
+import codex.boost.export.SavableObject;
+import codex.boost.render.DepthRange;
+import com.jme3.export.InputCapsule;
+import com.jme3.export.JmeExporter;
+import com.jme3.export.JmeImporter;
+import com.jme3.export.OutputCapsule;
+import com.jme3.export.Savable;
 import com.jme3.renderer.Camera;
 import com.jme3.renderer.GeometryRenderHandler;
 import com.jme3.renderer.RenderManager;
@@ -37,6 +43,7 @@ import com.jme3.renderer.queue.GeometryList;
 import com.jme3.renderer.queue.NullComparator;
 import com.jme3.scene.Geometry;
 import com.jme3.util.ListSort;
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.function.Function;
@@ -50,7 +57,7 @@ import java.util.function.Function;
  * 
  * @author codex
  */
-public class GeometryQueue implements Iterable<Geometry> {
+public class GeometryQueue implements Iterable<Geometry>, Savable {
     
     private static final int DEFAULT_SIZE = 32;
     
@@ -115,7 +122,7 @@ public class GeometryQueue implements Iterable<Geometry> {
         if (handler == null) {
             handler = GeometryRenderHandler.DEFAULT;
         }
-        renderManager.getRenderer().setDepthRange(depth);
+        depth.apply(renderManager.getRenderer());
         if (!perspective) {
             renderManager.setCamera(cam, true);
         }
@@ -127,7 +134,7 @@ public class GeometryQueue implements Iterable<Geometry> {
         if (!perspective) {
             renderManager.setCamera(cam, false);
         }
-        renderManager.getRenderer().setDepthRange(DepthRange.IDENTITY);
+        DepthRange.NORMAL.apply(renderManager.getRenderer());
         for (GeometryQueue q : internalQueues) {
             q.render(renderManager, handler);
         }
@@ -422,6 +429,20 @@ public class GeometryQueue implements Iterable<Geometry> {
     @Override
     public Iterator<Geometry> iterator() {
         return new GeometryIterator();
+    }
+    @Override
+    public void write(JmeExporter ex) throws IOException {
+        OutputCapsule out = ex.getCapsule(this);
+        out.write(new SavableObject(comparator), "comparator", SavableObject.NULL);
+        out.write(depth, "depth", DepthRange.NORMAL);
+        out.write(perspective, "perspective", true);
+    }
+    @Override
+    public void read(JmeImporter im) throws IOException {
+        InputCapsule in = im.getCapsule(this);
+        comparator = SavableObject.read(in, "comparator", GeometryComparator.class);
+        depth.set(SavableObject.readSavable(in, "depth", DepthRange.class, DepthRange.NORMAL));
+        perspective = in.readBoolean("perspective", true);
     }
     
     private class GeometryIterator implements Iterator<Geometry> {

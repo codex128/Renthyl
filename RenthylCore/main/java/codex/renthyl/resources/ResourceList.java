@@ -35,6 +35,7 @@ import codex.renthyl.definitions.ResourceDef;
 import com.jme3.texture.FrameBuffer;
 import com.jme3.texture.Texture;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedList;
 
 /**
@@ -60,6 +61,7 @@ public class ResourceList {
     private GraphEventCapture cap;
     private ArrayList<ResourceView> resources = new ArrayList<>(INITIAL_SIZE);
     private final LinkedList<FutureReference> futureRefs = new LinkedList<>();
+    private final HashMap<String, RenderObject> objectCache = new HashMap<>();
     private int nextSlot = 0;
     private int textureBinds = 0;
     
@@ -453,50 +455,6 @@ public class ResourceList {
     }
     
     /**
-     * Merges the entry resource view into the target resource view, so that queries
-     * to the entry resource will find the target resource instead.
-     * <p>
-     * This is commonly used to cheaply "pass on" an input resource as an output
-     * resource, although there are two different resource views involved. This
-     * can fail if a reservation is present that would be overriden by merging.
-     * <p>
-     * If the target resource view is primitive, the resource is transferred to
-     * the entry resource view and no merging is performed (true is still returned).
-     * Reservations to the entry resource are not transferred.
-     * <p>
-     * In case of merging, the entry ticket's index is set to the target resource view's
-     * index, so that queries through that ticket are directed to the target resource.
-     * Queries outside the entry ticket will still point to the entry resource view,
-     * which would be incorrect.
-     * 
-     * @param <T>
-     * @param targetTicket points to the resource view that gets merged into
-     * @param entryTicket points to the resource view that is merged into the other
-     * @param force true to ignore reservations to the target resource when merging
-     * @return true if the merge was successful
-     * @throws NullPointerException if the target resource view is virtual or undefined
-     */
-    public <T> boolean merge(ResourceTicket<T> targetTicket, ResourceTicket<T> entryTicket, boolean force) {
-        ResourceView<T> target = locate(targetTicket);
-        ResourceView<T> entry = locate(entryTicket);
-        if (target.isVirtual() || target.isUndefined()) {
-            throw new NullPointerException("Target "+target+" must contain a resource to merge.");
-        }
-        if (target.isPrimitive()) {
-            // primitive resources can be directly transferred
-            entry.setPrimitive(target.getResource());
-            return true;
-        }
-        if (force || !target.getObject().isReservedWithin(entry.getLifeTime())) {
-            target.merge(entry);
-            // redirect queries from the old view to the new view
-            targetTicket.copyIndexTo(entryTicket);
-            return true;
-        }
-        return false;
-    }
-    
-    /**
      * If the ticket is not null and has a positive or zero world index, an object
      * will be acquired for the resource and returned.
      * <p>
@@ -546,8 +504,8 @@ public class ResourceList {
             fbo.setUpdateNeeded();
             return texArray;
         }
-        if (tickets.length < fbo.getNumColorTargets()) {
-            fbo.trimColorTargetsTo(tickets.length-1);
+        while (tickets.length < fbo.getNumColorTargets()) {
+            fbo.removeColorTarget(fbo.getNumColorTargets()-1);
             fbo.setUpdateNeeded();
         }
         int i = 0;
@@ -586,8 +544,8 @@ public class ResourceList {
             }
             return null;
         }
-        if (fbo.getNumColorTargets() > 1) {
-            fbo.trimColorTargetsTo(0);
+        while (fbo.getNumColorTargets() > 1) {
+            fbo.removeColorTarget(fbo.getNumColorTargets()-1);
             fbo.setUpdateNeeded();
         }
         return replaceColorTarget(fbo, ticket, 0);
@@ -633,6 +591,32 @@ public class ResourceList {
             textureBinds++;
         }
         return acquired;
+    }
+    
+    /**
+     * Acquires cached resource at the key.
+     * <p>
+     * If no cached resource exists at the key, the resource will be set to
+     * undefined. If the resource is not virtual, an exception will be thrown.
+     * <p>
+     * This operation is not threadsafe if two threads request the same resource
+     * at once.
+     * 
+     * @param <T>
+     * @param ticket
+     * @param key
+     * @return 
+     */
+    public <T> T acquireCached(ResourceTicket ticket, String key) {
+        ResourceView<T> res = locate(ticket);
+        if (!res.isVirtual()) {
+            throw new IllegalStateException(res+" must be virtual to acquire cached resource.");
+        }
+        if (map.allocateFromCache(objectCache, res, key)) {
+            return res.getResource();
+        }
+        res.setUndefined();
+        return null;
     }
     
     /**
@@ -717,6 +701,26 @@ public class ResourceList {
     }
     
     /**
+     * Caches the object currently associated with the ticket's resource view.
+     * <p>
+     * The resource view cannot be virtual or primitive, otherwise can exception
+     * is thrown.
+     * 
+     * @param ticket 
+     * @param key 
+     */
+    public void cache(ResourceTicket ticket, String key) {
+        ResourceView res = locate(ticket);
+        if (res.isVirtual()) {
+            throw new IllegalStateException("Cannot cache because resource is virtual.");
+        }
+        if (res.isPrimitive()) {
+            throw new IllegalStateException("Cannot cache primitive resource.");
+        }
+        map.cache(objectCache, res.getObject().getId(), key);
+    }
+    
+    /**
      * Prepares this for rendering.
      * <p>
      * This should only be called once per frame.
@@ -727,6 +731,13 @@ public class ResourceList {
         this.map = map;
         this.cap = cap;
         textureBinds = 0;
+    }
+    
+    /**
+     * Cleans up after rendering.
+     */
+    public void endRenderFrame() {
+        map.flushCache(objectCache);
     }
     
     /**
@@ -808,6 +819,15 @@ public class ResourceList {
      */
     public int getNumTextureBinds() {
         return textureBinds;
+    }
+    
+    /**
+     * Returns the size of the object cache.
+     * 
+     * @return 
+     */
+    public int getObjectCacheSize() {
+        return objectCache.size();
     }
     
     /**

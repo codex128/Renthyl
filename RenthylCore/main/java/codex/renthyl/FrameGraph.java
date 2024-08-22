@@ -225,6 +225,7 @@ public class FrameGraph implements RenderPipeline<FGPipelineContext> {
     @Override
     public void endRenderFrame(RenderManager rm) {
         root.renderingComplete();
+        resources.endRenderFrame();
         rendered = false;
     }
     @Override

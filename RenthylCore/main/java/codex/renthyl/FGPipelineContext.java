@@ -30,12 +30,11 @@ package codex.renthyl;
 
 import codex.renthyl.resources.RenderObjectMap;
 import codex.renthyl.debug.GraphEventCapture;
-import com.jme3.app.Application;
-import com.jme3.app.state.AppState;
-import com.jme3.app.state.AppStateManager;
-import com.jme3.renderer.pipeline.AbstractPipelineContext;
 import com.jme3.renderer.RenderManager;
+import com.jme3.renderer.ViewPort;
+import com.jme3.renderer.pipeline.PipelineContext;
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -44,12 +43,13 @@ import java.util.logging.Logger;
  * 
  * @author codex
  */
-public class FGPipelineContext extends AbstractPipelineContext {
+public class FGPipelineContext implements PipelineContext {
     
     private static final Logger LOG = Logger.getLogger(FGPipelineContext.class.getName());
     
     private final RenderObjectMap renderObjects;
     private final ExecutionThreadManager threadManager = new ExecutionThreadManager();
+    private final AtomicBoolean rendered = new AtomicBoolean(false);
     private GraphEventCapture eventCapture;
     
     public FGPipelineContext(RenderManager rm) {
@@ -57,14 +57,17 @@ public class FGPipelineContext extends AbstractPipelineContext {
     }
 
     @Override
-    public void startRenderFrame(RenderManager rm) {
+    public boolean startViewPortRender(RenderManager rm, ViewPort vp) {
         if (eventCapture != null) {
             eventCapture.beginRenderFrame();
         }
         renderObjects.newFrame();
+        return rendered.getAndSet(true);
     }
     @Override
-    public void endRenderFrame(RenderManager rm) {
+    public void endViewPortRender(RenderManager rm, ViewPort vp) {}
+    @Override
+    public void endContextRenderFrame(RenderManager rm) {
         if (eventCapture != null) {
             eventCapture.endRenderFrame();
         }
@@ -78,6 +81,7 @@ public class FGPipelineContext extends AbstractPipelineContext {
             }
             eventCapture = null;
         }
+        rendered.set(false);
     }
 
     public void setEventCapture(GraphEventCapture eventCapture) {

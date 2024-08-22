@@ -34,6 +34,7 @@ import codex.renthyl.FGRenderContext;
 import codex.renthyl.FrameGraph;
 import codex.renthyl.GeometryQueue;
 import codex.renthyl.resources.ResourceTicket;
+import codex.boost.render.DepthRange;
 import codex.renthyl.util.SpatialWorldParam;
 import com.jme3.export.InputCapsule;
 import com.jme3.export.JmeExporter;
@@ -44,7 +45,6 @@ import com.jme3.light.Light;
 import com.jme3.light.LightList;
 import com.jme3.renderer.Camera;
 import com.jme3.renderer.ViewPort;
-import com.jme3.renderer.DepthRange;
 import com.jme3.renderer.queue.GeometryComparator;
 import com.jme3.renderer.queue.GuiComparator;
 import com.jme3.renderer.queue.NullComparator;
@@ -236,7 +236,7 @@ public class SceneEnqueuePass extends RenderPass {
      * @throws IllegalStateException if called while assigned to a framegraph
      */
     public final SceneEnqueuePass add(String name, GeometryComparator comparator) {
-        return add(name, comparator, DepthRange.IDENTITY, true);
+        return add(name, comparator, DepthRange.NORMAL, true);
     }
     /**
      * Adds a queue with the name, comparator, depth range, and perspective mode.
@@ -326,17 +326,13 @@ public class SceneEnqueuePass extends RenderPass {
         public void write(JmeExporter ex) throws IOException {
             OutputCapsule out = ex.getCapsule(this);
             out.write(name, "name", "Opaque");
-            out.write(queue.getComparator(), "comparator", NULL_COMPARATOR);
-            out.write(queue.getDepth(), "depth", DepthRange.IDENTITY);
-            out.write(queue.isPerspective(), "perspective", true);
+            out.write(queue, "queue", new GeometryQueue());
         }
         @Override
         public void read(JmeImporter im) throws IOException {
             InputCapsule in = im.getCapsule(this);
             name = in.readString("name", "Opaque");
-            queue = new GeometryQueue(SavableObject.readSavable(in, "comparator", GeometryComparator.class, NULL_COMPARATOR));
-            queue.setDepth(SavableObject.readSavable(in, "depth", DepthRange.class, DepthRange.IDENTITY));
-            queue.setPerspective(in.readBoolean("perspective", true));
+            queue = SavableObject.readSavable(in, "queue", GeometryQueue.class, new GeometryQueue());
         }
         
     }

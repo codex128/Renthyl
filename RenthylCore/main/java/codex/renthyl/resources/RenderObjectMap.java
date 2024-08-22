@@ -45,7 +45,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RenderObjectMap {
     
     private final FGPipelineContext context;
-    private final Map<Long, RenderObject> objectMap;
+    private final Map<Long, RenderObject> objectMap = new ConcurrentHashMap<>();
     private int staticTimeout = 1;
     
     // statistics
@@ -65,7 +65,6 @@ public class RenderObjectMap {
      */
     public RenderObjectMap(FGPipelineContext context, boolean async) {
         this.context = context;
-        objectMap = new ConcurrentHashMap<>();
     }
     
     private <T> RenderObject<T> create(ResourceDef<T> def) {
@@ -100,6 +99,27 @@ public class RenderObjectMap {
             allocateSync(resource);
         }
     }
+    /**
+     * Allocates a render object from the object cache.
+     * 
+     * @param <T>
+     * @param cache
+     * @param resource
+     * @param key
+     * @return true if allocation successful
+     */
+    public <T> boolean allocateFromCache(Map<String, RenderObject> cache, ResourceView<T> resource, String key) {
+        RenderObject obj = cache.remove(key);
+        if (obj == null) {
+            return false;
+        }
+        // Since this isn't a true reallocation, don't ask the resource definition
+        // for permission. The user should be aware of the types, and the system
+        // will fail gracefully if not.
+        resource.setObject(obj);
+        objectMap.put(obj.getId(), obj);
+        return true;
+    }
     
     private <T> void allocateSync(ResourceView<T> resource) {
         if (resource.isUndefined()) {
@@ -120,7 +140,8 @@ public class RenderObjectMap {
             T indirectRes = null;
             RenderObject indirectObj = null;
             for (RenderObject obj : objectMap.values()) {
-                if (isAvailable(obj) && !obj.isReservedWithin(resource.getLifeTime())) {
+                if (isAvailable(obj) && obj.isAllowCasualAllocation()
+                        && !obj.isReservedWithin(resource.getLifeTime())) {
                     // try applying a direct resource
                     T r = def.applyDirectResource(obj.getObject());
                     if (r != null) {
@@ -205,7 +226,7 @@ public class RenderObjectMap {
                 RenderObject obj;
                 if (next) obj = it.next();
                 else obj = skipped.removeFirst();
-                if (isAvailable(obj)) {
+                if (isAvailable(obj) && obj.isAllowCasualAllocation()) {
                     if ((next || !skipped.isEmpty()) && obj.isInspect()) {
                         // Inspect this object later, because something else is inspecting it.
                         // This makes this thread try other objects first, instead of waiting
@@ -351,6 +372,24 @@ public class RenderObjectMap {
             }
         }
     }
+    /**
+     * Caches the object at the key.
+     * 
+     * @param cache
+     * @param objectId 
+     * @param key 
+     * @return  
+     */
+    public boolean cache(Map<String, RenderObject> cache, long objectId, String key) {
+        RenderObject obj = objectMap.remove(objectId);
+        if (obj != null) {
+            cache.put(key, obj);
+            // the object can no longer be reserved, so clear reservations now
+            obj.clearReservations();
+            return true;
+        }
+        return false;
+    }
     
     /**
      * Should be called only when a new rendering frame begins (before rendering).
@@ -381,17 +420,7 @@ public class RenderObjectMap {
         totalObjects = objectMap.size();
         GraphEventCapture cap = context.getEventCapture();
         if (cap != null) cap.flushObjects(totalObjects);
-        for (Iterator<RenderObject> it = objectMap.values().iterator(); it.hasNext();) {
-            RenderObject obj = it.next();
-            if (!obj.tickTimeout()) {
-                if (cap != null) cap.disposeObject(obj.getId());
-                obj.dispose();
-                it.remove();
-                flushedObjects++;
-                continue;
-            }
-            obj.setConstant(false);
-        }
+        flushCollection(objectMap.values(), cap);
         if (cap != null) {
             cap.value("totalAllocations", totalAllocations);
             cap.value("officialReservations", officialReservations);
@@ -403,17 +432,42 @@ public class RenderObjectMap {
         }
     }
     /**
-     * Clears the map.
+     * Flushes the given object cache.
+     * 
+     * @param cache 
+     */
+    public void flushCache(Map<String, RenderObject> cache) {
+        flushCollection(cache.values(), context.getEventCapture());
+    }
+    /**
+     * Clears the map and cache.
      * <p>
      * All tracked render objects are disposed.
      */
     public void clearMap() {
         GraphEventCapture cap = context.getEventCapture();
-        for (RenderObject obj : objectMap.values()) {
+        disposeCollection(objectMap.values(), cap);
+        objectMap.clear();
+    }
+    
+    private void flushCollection(Iterable<RenderObject> iterable, GraphEventCapture cap) {
+        for (Iterator<RenderObject> it = iterable.iterator(); it.hasNext();) {
+            RenderObject obj = it.next();
+            if (!obj.tickTimeout()) {
+                if (cap != null) cap.disposeObject(obj.getId());
+                obj.dispose();
+                it.remove();
+                flushedObjects++;
+                continue;
+            }
+            obj.setConstant(false);
+        }
+    }
+    private void disposeCollection(Iterable<RenderObject> iterable, GraphEventCapture cap) {
+        for (RenderObject obj : iterable) {
             if (cap != null) cap.disposeObject(obj.getId());
             obj.dispose();
         }
-        objectMap.clear();
     }
     
     /**

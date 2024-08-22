@@ -218,7 +218,8 @@ public class FGRenderContext {
      */
     public void resizeCamera(int w, int h, boolean fixAspect, boolean ortho, boolean force) {
         Camera cam = viewPort.getCamera();
-        if (cam.resize(w, h, fixAspect, force)) {
+        if (force || w != cam.getWidth() || h != cam.getHeight()) {
+            cam.resize(w, h, fixAspect);
             renderManager.setCamera(cam, ortho);
         }
     }
