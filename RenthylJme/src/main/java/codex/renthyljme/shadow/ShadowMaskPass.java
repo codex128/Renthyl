@@ -26,7 +26,7 @@ import java.util.List;
  *
  * @author gary
  */
-public class ShadowComposerPass extends RasterTask {
+public class ShadowMaskPass extends RasterTask {
     
     private static final int MAX_SHADOW_LIGHTS = 32;
 
@@ -41,7 +41,7 @@ public class ShadowComposerPass extends RasterTask {
     private final WorkSize work = new WorkSize();
     private TextureImage resultImage;
 
-    public ShadowComposerPass(AssetManager assetManager, ResourceAllocator allocator) {
+    public ShadowMaskPass(AssetManager assetManager, ResourceAllocator allocator) {
         addSockets(sceneDepth, sceneNormals, shadowMaps, lightShadowIndices);
         shadowMask = addSocket(new AllocationSocket<>(this, allocator, contributionDef));
         contributionDef.setFormat(Image.Format.R32F);

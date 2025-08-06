@@ -39,7 +39,7 @@ MaterialDef PBRDirect {
     Technique VXGI_DirectLighting {
         
         VertexShader   GLSL450 : Common/MatDefs/Light/PBRLighting.vert
-        FragmentShader GLSL450 : RenthylPlus/MatDefs/VXGI/pbrDirect.frag
+        FragmentShader GLSL450 : RenthylJme/MatDefs/VXGI/pbrDirect.frag
 
         WorldParameters {
             WorldViewProjectionMatrix

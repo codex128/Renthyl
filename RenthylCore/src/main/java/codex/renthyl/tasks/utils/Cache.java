@@ -2,7 +2,7 @@ package codex.renthyl.tasks.utils;
 
 import codex.renthyl.GlobalAttributes;
 import codex.renthyl.render.queue.RenderingQueue;
-import codex.renthyl.resources.FreezeableWrapper;
+import codex.renthyl.resources.CacheableWrapper;
 import codex.renthyl.resources.ResourceAllocator;
 import codex.renthyl.sockets.PointerSocket;
 import codex.renthyl.sockets.Socket;
@@ -14,13 +14,13 @@ import java.util.Objects;
 
 public class Cache <T> extends Frame implements PointerSocket<T>, Macro<T> {
 
-    private final ResourceAllocator<FreezeableWrapper> allocator;
-    private FreezeableWrapper<T> cachedWrapper;
+    private final ResourceAllocator<CacheableWrapper> allocator;
+    private CacheableWrapper<T> cachedWrapper;
     private Socket<? extends T> upstream;
     private boolean stagedUpstream = false;
     private int activeRefs = 0;
 
-    public Cache(ResourceAllocator<FreezeableWrapper> allocator) {
+    public Cache(ResourceAllocator<CacheableWrapper> allocator) {
         this.allocator = allocator;
     }
 
@@ -64,7 +64,7 @@ public class Cache <T> extends Frame implements PointerSocket<T>, Macro<T> {
             T value = upstream.acquire();
             if (value != null) {
                 cachedWrapper = allocator.getWrapperOf(value);
-                Objects.requireNonNull(cachedWrapper, "Failed to locate wrapper for value.").freeze(true);
+                Objects.requireNonNull(cachedWrapper, "Failed to locate wrapper for value.").cache(true);
             } else refresh();
         }
         return preview();
@@ -113,7 +113,7 @@ public class Cache <T> extends Frame implements PointerSocket<T>, Macro<T> {
 
     public void refresh() {
         if (cachedWrapper != null) {
-            cachedWrapper.freeze(false);
+            cachedWrapper.cache(false);
             cachedWrapper = null;
         }
     }

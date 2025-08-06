@@ -16,10 +16,10 @@
     #define GRID_MAX m_GridMax
     #define GRID_SIZE m_GridSize
     #define TRACE_DISPLACEMENT 2.0
-    #import "RenthylPlus/MatDefs/VXGI/voxelConeTracing.glsllib"
+    #import "RenthylJme/MatDefs/VXGI/voxelConeTracing.glsllib"
 #endif
 #ifdef SHADOWS
-    #import "RenthylPlus/ShaderLib/Shadows.glsllib"
+    #import "RenthylJme/ShaderLib/Shadows.glsllib"
     uniform sampler3D m_LightContributionMap;
 #endif
 #define COMPONENTS_PER_LIGHT 12

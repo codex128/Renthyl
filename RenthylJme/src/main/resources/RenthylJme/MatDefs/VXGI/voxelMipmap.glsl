@@ -1,5 +1,5 @@
 
-layout (local_size_x = LOCAL_X, local_size_y = LOCAL_Y, local_size_z = LOCAL_z) in;
+layout (local_size_x = LOCAL_SIZE_X, local_size_y = LOCAL_SIZE_Y, local_size_z = LOCAL_SIZE_Z) in;
 
 #import "Common/ShaderLib/GLSLCompat.glsllib"
 

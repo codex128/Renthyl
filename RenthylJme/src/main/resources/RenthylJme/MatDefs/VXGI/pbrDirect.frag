@@ -2,8 +2,8 @@
 #import "Common/ShaderLib/PBR.glsllib"
 #import "Common/ShaderLib/Parallax.glsllib"
 #import "Common/ShaderLib/Lighting.glsllib"
-#import "RenthylPlus/MatDefs/VXGI/gbufferCompression.glsllib"
-#import "RenthylPlus/ShaderLib/Shadows.glsllib"
+#import "RenthylJme/MatDefs/VXGI/gbufferCompression.glsllib"
+#import "RenthylJme/ShaderLib/Shadows.glsllib"
 
 layout(location = 0) out vec4 outScene;
 layout(location = 1) out vec4 outDiffuse;
@@ -269,7 +269,7 @@ void main(){
         vec4 lightColor = readLightData(i);
         int lightType = int(lightColor.w);
         #ifdef VXGI_SHADOWS
-            uint shadowIndex = uint(extractShadowIndex(lightType));
+            int shadowIndex = int(extractShadowIndex(lightType));
             if (!isExposedToLight(shadowIndex, m_VXGI_LightContributionMap, screenUv)) {
                 continue;
             }
@@ -331,5 +331,6 @@ void main(){
     //outDiffuse = compressGBuffer(diffuseColor.rgb, wPosition);
     outNormal = vec4(normalize(mix(wNormal, normal, 0.0)), 0.0);
     outMaterial = compressGBuffer(specularColor.rgb, Metallic, Roughness);
+    outScene = vec4(0.0, VXGI_LIGHT_DATA_SIZE, 0.0, 1.0);
    
 }

@@ -4,12 +4,15 @@ import codex.renthyl.sockets.Socket;
 import com.jme3.asset.AssetManager;
 import com.jme3.material.MatParam;
 import com.jme3.material.Material;
+import com.jme3.material.TechniqueDef;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.SceneGraphIterator;
 import com.jme3.scene.Spatial;
+import com.jme3.texture.Texture;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -154,6 +157,35 @@ public class MaterialUtils {
             material.clearParam(name);
         }
         return v;
+    }
+
+    public static int getShaderSortId(Material material, String technique) {
+        List<TechniqueDef> techs = material.getMaterialDef().getTechniqueDefs(technique);
+        if (techs.isEmpty()) {
+            throw new IllegalArgumentException(technique + " is not a valid technique.");
+        }
+        return techs.get(0).getSortId();
+    }
+
+    /**
+     * Evaluates the sorting ID based on the textures contained in the material.
+     *
+     * @param material
+     * @return
+     */
+    public static int computeTextureSortId(Material material) {
+        int sortId = 17;
+        for (MatParam p : material.getParams()) {
+            if (!p.getVarType().isTextureType()) {
+                continue;
+            }
+            Texture t = (Texture)p.getValue();
+            if (t == null || t.getImage() == null) {
+                continue;
+            }
+            sortId = sortId * 23 + t.getImage().getId();
+        }
+        return sortId;
     }
 
 }

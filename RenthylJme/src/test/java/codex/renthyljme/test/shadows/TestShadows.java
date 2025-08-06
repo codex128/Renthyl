@@ -10,7 +10,7 @@ import codex.renthyljme.lights.LightBufferPass;
 import codex.renthyljme.lights.LightGatherPass;
 import codex.renthyljme.resources.ResourceAllocationState;
 import codex.renthyljme.scene.*;
-import codex.renthyljme.shadow.ShadowComposerPass;
+import codex.renthyljme.shadow.ShadowMaskPass;
 import codex.renthyljme.shadow.ShadowManager;
 import codex.renthyljme.shadow.ShadowMap;
 import codex.renthyljme.utils.InputToggledMux;
@@ -31,6 +31,7 @@ import com.jme3.scene.Geometry;
 import com.jme3.scene.Mesh;
 import com.jme3.scene.shape.Box;
 import com.jme3.system.AppSettings;
+import com.jme3.texture.Image;
 import com.jme3.texture.Texture2D;
 import com.jme3.util.mikktspace.MikktspaceTangentGenerator;
 
@@ -56,7 +57,7 @@ public class TestShadows extends SimpleApplication {
         rootNode.setShadowMode(RenderQueue.ShadowMode.CastAndReceive);
         flyCam.setMoveSpeed(10);
 
-        createShape(new NormalQuad(Vector3f.UNIT_Y, Vector3f.UNIT_Z, 10f, 10f, 0.5f, 0.5f), ColorRGBA.White, 0f, 1f);
+        createShape(new NormalQuad(Vector3f.UNIT_Y, Vector3f.UNIT_Z, 10f, 10f, 0.5f, 0.5f), ColorRGBA.White, 0.9f, 0.1f);
         createShape(new Box(1f, 1f, 1f), ColorRGBA.White, 0f, 1f).setLocalTranslation(0f, 2f, 0f);
 
         DirectionalLight dl = new DirectionalLight();
@@ -90,7 +91,7 @@ public class TestShadows extends SimpleApplication {
         shadows.addDirectionalLightSource(new Attribute<>(dl), 1024, 1);
         shadows.addPointLightSource(new Attribute<>(pl), 1024);
         shadows.addSpotLightSource(new Attribute<>(sl), 1024);
-        ShadowComposerPass shadowComposer = new ShadowComposerPass(assetManager, allocator);
+        ShadowMaskPass shadowComposer = new ShadowMaskPass(assetManager, allocator);
         shadowComposer.getShadowMaps().addCollectionSource(shadows.getShadowMaps());
 
         SceneEnqueuePass enqueue = SceneEnqueuePass.withLegacyQueues();
@@ -121,6 +122,7 @@ public class TestShadows extends SimpleApplication {
                 return lights.size() * 12;
             }
         }.setUpstream(lightGather.getLights()));
+        geometry.getColorDef().setFormat(Image.Format.RGBA32F);
 
         InputToggledMux<Texture2D> outChannel = new InputToggledMux<>();
         outChannel.addUpstream(geometry.getOutColor());

@@ -31,9 +31,9 @@ MaterialDef Voxelize {
 
     Technique {
     
-        VertexShader   GLSL450 GLSL430 : RenthylPlus/MatDefs/VXGI/voxelize.vert
-        GeometryShader GLSL450 GLSL430 : RenthylPlus/MatDefs/VXGI/voxelize.geom
-        FragmentShader GLSL450 GLSL430 : RenthylPlus/MatDefs/VXGI/voxelize.frag
+        VertexShader   GLSL450 GLSL430 : RenthylJme/MatDefs/VXGI/voxelize.vert
+        GeometryShader GLSL450 GLSL430 : RenthylJme/MatDefs/VXGI/voxelize.geom
+        FragmentShader GLSL450 GLSL430 : RenthylJme/MatDefs/VXGI/voxelize.frag
 
         WorldParameters {
             WorldMatrix

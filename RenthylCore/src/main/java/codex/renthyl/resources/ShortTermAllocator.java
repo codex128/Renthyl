@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Allocates resources with the intention of recycling them to meet
  * future allocation requests.
  */
-public class ShortTermAllocator implements ResourceAllocator<FreezeableWrapper> {
+public class ShortTermAllocator implements ResourceAllocator<CacheableWrapper> {
 
     private final Map<Long, AllocatedResource> resources = new ConcurrentHashMap<>();
     private long nextId = 0;
@@ -18,7 +18,7 @@ public class ShortTermAllocator implements ResourceAllocator<FreezeableWrapper> 
     private int timeoutLength = 1;
 
     @Override
-    public FreezeableWrapper allocate(ResourceDef def, int start, int end) {
+    public CacheableWrapper allocate(ResourceDef def, int start, int end) {
         AllocatedResource target = null;
         float lowestEval = Float.MAX_VALUE;
         int selections = 0;
@@ -53,7 +53,7 @@ public class ShortTermAllocator implements ResourceAllocator<FreezeableWrapper> 
     }
 
     @Override
-    public FreezeableWrapper getWrapperOf(Object resource) {
+    public CacheableWrapper getWrapperOf(Object resource) {
         return resources.values().stream().filter(w -> w.get() == resource).findAny().orElse(null);
     }
 
@@ -121,7 +121,7 @@ public class ShortTermAllocator implements ResourceAllocator<FreezeableWrapper> 
         return timeoutLength;
     }
 
-    private static class AllocatedResource <T> implements FreezeableWrapper<T> {
+    private static class AllocatedResource <T> implements CacheableWrapper<T> {
 
         private final long id;
         private final Disposer<T> disposer;
@@ -129,7 +129,7 @@ public class ShortTermAllocator implements ResourceAllocator<FreezeableWrapper> 
         private final int timeoutLength;
         private T resource;
         private int timeout;
-        private boolean frozen = false;
+        private boolean cached = false;
 
         public AllocatedResource(long id, int timeout, T resource, Disposer<T> disposer) {
             this.id = id;
@@ -158,12 +158,12 @@ public class ShortTermAllocator implements ResourceAllocator<FreezeableWrapper> 
 
         @Override
         public boolean isAvailable() {
-            return resource != null && !frozen && !acquired.get();
+            return resource != null && !cached && !acquired.get();
         }
 
         @Override
-        public void freeze(boolean freeze) {
-            this.frozen = freeze;
+        public void cache(boolean cache) {
+            this.cached = cache;
         }
 
         public void dispose() {
@@ -172,7 +172,7 @@ public class ShortTermAllocator implements ResourceAllocator<FreezeableWrapper> 
         }
 
         public boolean cycle() {
-            return resource != null && (frozen || acquired.get() || timeout-- > 0);
+            return resource != null && (cached || acquired.get() || timeout-- > 0);
         }
 
         public long getId() {

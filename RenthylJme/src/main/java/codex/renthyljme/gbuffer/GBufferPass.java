@@ -109,9 +109,9 @@ public class GBufferPass extends RasterTask implements GeometryRenderHandler {
         context.getRenderManager().renderGeometry(geometry);
     }
 
-    public void addBuffer(TextureDef<Texture2D> def) {
+    public int addBuffer(TextureDef<Texture2D> def) {
         gbuffers.add(new DefinedAllocationSocket<>(this, allocator, def));
-        def.setColorSpace(ColorSpace.Linear);
+        return gbuffers.size() - 1;
     }
 
     public ArgumentSocket<Object> getParameter(String name) {

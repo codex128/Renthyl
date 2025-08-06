@@ -4,6 +4,9 @@
  */
 package codex.renthyljme.gi.vct;
 
+import codex.renthyl.sockets.ArgumentSocket;
+import codex.renthyl.sockets.macros.ArgumentMacro;
+import codex.renthyl.tasks.utils.Multiplexor;
 import codex.renthyljme.geometry.GeometryQueue;
 import codex.renthyl.resources.ResourceAllocator;
 import codex.renthyl.sockets.collections.CollectorSocket;
@@ -26,17 +29,18 @@ import com.jme3.texture.Texture2D;
 @SuppressWarnings("FieldCanBeLocal")
 public class VoxelConeTracer extends Frame {
 
+    private final ArgumentSocket<Integer> gridSize = new ArgumentSocket<>(this, 64);
+    private final ArgumentSocket<BoundingBox> voxelBounds = new ArgumentSocket<>(this, new BoundingBox(new Vector3f(0, 10.1f, 0), 20, 20, 20));
     private final CollectorSocket<ShadowMap> shadowMaps = new CollectorSocket<>(this);
     private final CollectorSocket<GeometryQueue> geometry = new CollectorSocket<>(this);
     private final TransitiveSocket<LightBuffer> lightBuffer = new TransitiveSocket<>(this);
     private final TransitiveSocket<Texture2D> lightContribution = new TransitiveSocket<>(this);
-    private final TransitiveSocket<Texture2D> result = new TransitiveSocket<>(this);
+    private final Multiplexor<Texture2D> result = new Multiplexor<>(0);
     
     public VoxelConeTracer(AssetManager assetManager, ResourceAllocator allocator) {
 
-        addSockets(shadowMaps, geometry, lightBuffer, lightContribution, result);
+        addSockets(gridSize, shadowMaps, geometry, lightBuffer, lightContribution);
 
-        Attribute<Integer> gridSize = new Attribute<>(64);
         Attribute<BoundingBox> voxelBounds = new Attribute<>(new BoundingBox(new Vector3f(0, 10.1f, 0), 20, 20, 20));
         VoxelShadowComposerPass voxShadows = new VoxelShadowComposerPass(assetManager, allocator);
         DirectLightingPass direct = new DirectLightingPass(allocator);
@@ -62,8 +66,17 @@ public class VoxelConeTracer extends Frame {
         indirect.getVoxelBounds().setUpstream(voxelBounds);
         indirect.getVoxels().setUpstream(voxels.getVoxels());
 
-        result.setUpstream(indirect.getResult());
+        result.addUpstream(indirect.getResult());
+        result.addUpstream(direct.getGBufferMap().get("Color"));
 
+    }
+
+    public ArgumentSocket<Integer> getGridSize() {
+        return gridSize;
+    }
+
+    public ArgumentSocket<BoundingBox> getVoxelBounds() {
+        return voxelBounds;
     }
 
     public CollectorSocket<ShadowMap> getShadowMaps() {
@@ -84,6 +97,10 @@ public class VoxelConeTracer extends Frame {
 
     public Socket<Texture2D> getResult() {
         return result;
+    }
+
+    public ArgumentMacro<Integer> getResultSelector() {
+        return result.getIndex();
     }
 
 }
