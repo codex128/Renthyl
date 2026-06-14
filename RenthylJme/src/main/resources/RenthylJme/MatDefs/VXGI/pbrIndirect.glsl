@@ -1,8 +1,8 @@
 
-layout (local_size_x = LOCAL_X, local_size_y = LOCAL_Y, local_size_z = LOCAL_z) in;
+layout (local_size_x = LOCAL_SIZE_X, local_size_y = LOCAL_SIZE_Y, local_size_z = LOCAL_SIZE_Z) in;
 
-#import "RenthylPlus/ShaderLib/Projection.glsllib"
-#import "RenthylPlus/MatDefs/VXGI/gbufferCompression.glsllib"
+#import "RenthylJme/ShaderLib/Projection.glsllib"
+#import "RenthylJme/MatDefs/VXGI/gbufferCompression.glsllib"
 
 uniform sampler3D VoxelMap;
 uniform sampler2D ColorMap;
@@ -30,7 +30,7 @@ layout(RGBA8) uniform image2D Target;
 #define GRID_MAX GridMax
 #define GRID_SIZE GridSize
 #define TRACE_DISPLACEMENT 0.1
-#import "RenthylPlus/MatDefs/VXGI/voxelConeTracing.glsllib"
+#import "RenthylJme/MatDefs/VXGI/voxelConeTracing.glsllib"
 
 shared int atomicR = 0;
 shared int atomicG = 0;

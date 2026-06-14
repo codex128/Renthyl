@@ -1,11 +1,8 @@
-package codex.renthyl.tasks.attributes;
+package codex.renthyl.sockets;
 
-/**
- * Attribute which throttles access to its value to ensure thread safety.
- *
- * @param <T>
- */
-public class SynchronizedAttribute <T> extends Attribute<T> implements codex.renthyl.sockets.Socket<T> {
+import codex.renthyl.render.Renderable;
+
+public class SynchronizedArgumentSocket<T> extends ArgumentSocket<T> {
 
     private static final int PADDING = 5;
 
@@ -13,16 +10,29 @@ public class SynchronizedAttribute <T> extends Attribute<T> implements codex.ren
     private int nextPosition = Integer.MAX_VALUE;
     private int lastPosition = -1;
 
-    public SynchronizedAttribute() {
-        super();
+    public SynchronizedArgumentSocket(Renderable task) {
+        super(task);
     }
-    public SynchronizedAttribute(T value) {
-        super(value);
+
+    public SynchronizedArgumentSocket(Renderable task, T value) {
+        super(task, value);
+    }
+
+    @Override
+    public boolean isAvailableToDownstream(int queuePosition) {
+        return queuePosition == nextPosition && super.isAvailableToDownstream(queuePosition);
+    }
+
+    @Override
+    public void resetSocket() {
+        if (nextPosition <= lastPosition) {
+            throw new IllegalStateException("Not all references were released.");
+        }
+        super.resetSocket();
     }
 
     @Override
     public void reference(int queuePosition) {
-        super.reference(queuePosition);
         if (schedule == null) {
             schedule = new int[queuePosition + PADDING];
         } else if (queuePosition >= schedule.length) {
@@ -33,32 +43,19 @@ public class SynchronizedAttribute <T> extends Attribute<T> implements codex.ren
         schedule[queuePosition]++;
         nextPosition = Math.min(nextPosition, queuePosition);
         lastPosition = Math.max(lastPosition, queuePosition);
-    }
-
-    @Override
-    public boolean isAvailableToDownstream(int queuePosition) {
-        return super.isAvailableToDownstream(queuePosition) && queuePosition == nextPosition;
+        super.reference(queuePosition);
     }
 
     @Override
     public void release(int queuePosition) {
+        super.release(queuePosition);
         if (queuePosition != nextPosition) {
             throw new IllegalStateException("Release of synchronized socket is out of order.");
         }
-        super.release(queuePosition);
         schedule[nextPosition]--;
         while (nextPosition <= lastPosition && schedule[nextPosition] <= 0) {
             nextPosition++;
         }
-    }
-
-    @Override
-    public void resetSocket() {
-        if (nextPosition <= lastPosition) {
-            throw new IllegalStateException("Not all scheduled references were released.");
-        }
-        nextPosition = Integer.MAX_VALUE;
-        lastPosition = -1;
     }
 
 }

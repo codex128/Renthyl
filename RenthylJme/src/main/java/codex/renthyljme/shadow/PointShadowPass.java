@@ -4,19 +4,29 @@
  */
 package codex.renthyljme.shadow;
 
+import codex.jmecompute.WorkSize;
+import codex.jmecompute.opengl.GLComputeShader;
 import codex.renthyl.sockets.*;
+import codex.renthyl.sockets.allocation.DefinedAllocationSocket;
+import codex.renthyljme.definitions.FrameBufferDef;
+import codex.renthyljme.definitions.TextureDef;
 import codex.renthyljme.geometry.GeometryQueue;
 import codex.renthyljme.render.CameraState;
 import codex.renthyl.resources.ResourceAllocator;
-import codex.renthyl.sockets.collections.SocketList;
 import codex.renthyljme.RasterTask;
 import com.jme3.asset.AssetManager;
+import com.jme3.bounding.BoundingBox;
 import com.jme3.light.PointLight;
 import com.jme3.material.Material;
 import com.jme3.material.RenderState;
+import com.jme3.math.Quaternion;
+import com.jme3.math.Vector2f;
 import com.jme3.math.Vector3f;
 import com.jme3.renderer.Camera;
 import com.jme3.texture.FrameBuffer;
+import com.jme3.texture.Image;
+import com.jme3.texture.Texture2D;
+import com.jme3.texture.TextureImage;
 
 import java.util.Collection;
 
@@ -26,27 +36,37 @@ import java.util.Collection;
  */
 public class PointShadowPass extends RasterTask implements Occlusion<PointLight> {
 
-    private static final Vector3f[] DIRECTIONS = {Vector3f.UNIT_X, Vector3f.UNIT_Y, Vector3f.UNIT_Z,
-            Vector3f.UNIT_X.negate(), Vector3f.UNIT_Y.negate(), Vector3f.UNIT_Z.negate()};
-    private static final Vector3f[] UPS = {Vector3f.UNIT_Y, Vector3f.UNIT_Z, Vector3f.UNIT_Y,
-            Vector3f.UNIT_Y, Vector3f.UNIT_Z, Vector3f.UNIT_Y};
+    private static final Quaternion[] ROTATIONS = {
+        new Quaternion().lookAt(Vector3f.UNIT_X, Vector3f.UNIT_Y),
+        new Quaternion().lookAt(Vector3f.UNIT_Y, Vector3f.UNIT_Z),
+        new Quaternion().lookAt(Vector3f.UNIT_Z, Vector3f.UNIT_Y),
+        new Quaternion().lookAt(Vector3f.UNIT_X.negate(), Vector3f.UNIT_Y),
+        new Quaternion().lookAt(Vector3f.UNIT_Y.negate(), Vector3f.UNIT_Z),
+        new Quaternion().lookAt(Vector3f.UNIT_Z.negate(), Vector3f.UNIT_Y),
+    };
 
     private final ArgumentSocket<PointLight> light = new ArgumentSocket<>(this);
+    private final TransitiveSocket<ShadowMask> mask = new TransitiveSocket<>(this);
+    private final TransitiveSocket<Texture2D> sceneDepth = new TransitiveSocket<>(this);
+    private final TransitiveSocket<Texture2D> sceneNormals = new TransitiveSocket<>(this);
     private final TransitiveSocket<GeometryQueue> occluders = new TransitiveSocket<>(this);
     private final TransitiveSocket<GeometryQueue> receivers = new OptionalSocket<>(this, false);
-    private final SocketList<ShadowMapSocket, ShadowMap> shadowMaps = new SocketList<>(this);
-    private final CameraState[] cameras = new CameraState[DIRECTIONS.length];
+    private final DefinedAllocationSocket<FrameBufferDef, FrameBuffer> frameBuffer;
+    private final DefinedAllocationSocket<TextureDef<Texture2D>, Texture2D> shadowMap;
+    private final CameraState[] cameras = new CameraState[ROTATIONS.length];
     private final Material backupMat;
     private final RenderState state = new RenderState();
     
     public PointShadowPass(AssetManager assetManager, ResourceAllocator allocator, int size) {
-        addSockets(light, occluders, receivers, shadowMaps);
-        for (int i = 0; i < DIRECTIONS.length; i++) {
-            shadowMaps.addSocket(new ShadowMapSocket(this, allocator)).setSize(size, size);
+        addSockets(light, mask, occluders, receivers);
+        for (int i = 0; i < ROTATIONS.length; i++) {
             Camera c = (cameras[i] = new CameraState(new Camera(size, size), false)).getCamera();
-            c.lookAtDirection(DIRECTIONS[i], UPS[i]);
+            c.setRotation(ROTATIONS[i]);
             c.setFrustumPerspective(90f, 1f, 0.3f, 2f);
         }
+        frameBuffer = addSocket(new DefinedAllocationSocket<>(this, allocator, new FrameBufferDef()));
+        shadowMap = addSocket(new DefinedAllocationSocket<>(this, allocator, TextureDef.texture2D(Image.Format.Depth16)));
+        shadowMap.getDef().setSize(size, size);
         backupMat = new Material(assetManager, "Common/MatDefs/Misc/Unshaded.j3md");
         state.setColorWrite(false);
         state.setDepthWrite(true);
@@ -58,35 +78,42 @@ public class PointShadowPass extends RasterTask implements Occlusion<PointLight>
 
         PointLight pl = light.acquireOrThrow("Light required.");
 
-        context.getFrameBuffer().push();
         context.getCamera().push();
         context.getForcedTechnique().pushValue("PreShadow");
         context.getForcedMaterial().pushValue(backupMat);
         context.getForcedState().pushValue(state);
 
-        int i = 0;
-        for (ShadowMapSocket socket : shadowMaps) {
+        Texture2D shadow = shadowMap.acquire();
+        frameBuffer.getDef().clearColorTargets();
+        frameBuffer.getDef().setDepthTarget(shadow);
+        FrameBuffer fbo = frameBuffer.acquire();
+        context.getFrameBuffer().pushValue(fbo);
 
-            CameraState cam = cameras[i++];
+        ShadowMask maskMap = mask.acquireOrThrow();
+        int maskIndex = maskMap.getNextMaskIndex();
+
+        GeometryQueue occluderQueue = occluders.acquireOrThrow("Occluder queue required.");
+        BoundingBox camBounds = new BoundingBox();
+
+        for (CameraState cam : cameras) {
+
             if (!cam.getCamera().getLocation().equals(pl.getPosition()) || cam.getCamera().getFrustumFar() != pl.getRadius()) {
                 cam.getCamera().setLocation(pl.getPosition());
                 cam.getCamera().setFrustumFar(pl.getRadius());
                 cam.getCamera().update();
                 cam.getCamera().updateViewProjection();
             }
+
+            Occlusion.computeShadowCameraBounds(cam.getCamera(), camBounds);
+            if (maskMap.getCamera().contains(camBounds) == Camera.FrustumIntersect.Outside) {
+                continue;
+            }
+
             context.getCamera().setValue(cam);
 
-            ShadowMap map = socket.acquire();
-            map.setLight(pl);
-            map.setProjection(cam.getCamera().getViewProjectionMatrix());
-            map.setRange(cam.getCamera().getFrustumNear(), cam.getCamera().getFrustumFar());
-            socket.setTargetDepth(map.getMap());
-
-            FrameBuffer fbo = socket.getFrameBuffer().acquire();
-            context.getFrameBuffer().setValue(fbo);
             context.clearBuffers(false, true, false);
-
-            occluders.acquireOrThrow("Occluder queue required.").render(context);
+            occluderQueue.render(context);
+            maskMap.compose(shadow, cam.getCamera().getViewProjectionMatrix(), pl, maskIndex);
 
         }
 
@@ -114,8 +141,8 @@ public class PointShadowPass extends RasterTask implements Occlusion<PointLight>
     }
 
     @Override
-    public Socket<? extends Collection<ShadowMap>> getShadowMaps() {
-        return shadowMaps;
+    public PointerSocket<ShadowMask> getShadowMask() {
+        return mask;
     }
 
 }

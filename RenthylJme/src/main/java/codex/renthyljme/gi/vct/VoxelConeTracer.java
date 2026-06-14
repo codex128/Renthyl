@@ -31,13 +31,13 @@ public class VoxelConeTracer extends Frame {
     private final TransitiveSocket<LightBuffer> lightBuffer = new TransitiveSocket<>(this);
     private final TransitiveSocket<Texture2D> lightContribution = new TransitiveSocket<>(this);
     private final TransitiveSocket<Texture2D> result = new TransitiveSocket<>(this);
+    private final Attribute<Integer> gridSize = new Attribute<>(64);
+    private final Attribute<BoundingBox> voxelBounds = new Attribute<>(new BoundingBox(new Vector3f(0, 0, 0), 20, 20, 20));
     
     public VoxelConeTracer(AssetManager assetManager, ResourceAllocator allocator) {
 
         addSockets(shadowMaps, geometry, lightBuffer, lightContribution, result);
 
-        Attribute<Integer> gridSize = new Attribute<>(64);
-        Attribute<BoundingBox> voxelBounds = new Attribute<>(new BoundingBox(new Vector3f(0, 10.1f, 0), 20, 20, 20));
         VoxelShadowComposerPass voxShadows = new VoxelShadowComposerPass(assetManager, allocator);
         DirectLightingPass direct = new DirectLightingPass(allocator);
         VoxelizationPass voxels = new VoxelizationPass(assetManager, allocator);
@@ -84,6 +84,14 @@ public class VoxelConeTracer extends Frame {
 
     public Socket<Texture2D> getResult() {
         return result;
+    }
+
+    public Attribute<Integer> getGridSize() {
+        return gridSize;
+    }
+
+    public Attribute<BoundingBox> getVoxelBounds() {
+        return voxelBounds;
     }
 
 }

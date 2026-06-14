@@ -3,7 +3,7 @@
 #import "Common/ShaderLib/PBR.glsllib"
 #import "Common/ShaderLib/Parallax.glsllib"
 #import "Common/ShaderLib/Lighting.glsllib"
-#import "RenthylPlus/ShaderLib/Shadows.glsllib"
+#import "RenthylJme/ShaderLib/Shadows.glsllib"
 
 uniform float m_VXGI_LightData[VXGI_LIGHT_DATA_SIZE];
 #define COMPONENTS_PER_LIGHT 12
@@ -21,7 +21,7 @@ uniform int m_VXGI_GridSize;
 #define GRID_MIN m_VXGI_GridMin
 #define GRID_MAX m_VXGI_GridMax
 #define GRID_SIZE m_VXGI_GridSize
-#import "RenthylPlus/MatDefs/VXGI/voxelConeTracing.glsllib"
+#import "RenthylJme/MatDefs/VXGI/voxelConeTracing.glsllib"
 
 uniform vec3 g_CameraPosition;
 

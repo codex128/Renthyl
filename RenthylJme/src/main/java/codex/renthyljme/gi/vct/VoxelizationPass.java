@@ -32,6 +32,8 @@ import com.jme3.material.RenderState;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Vector3f;
 import com.jme3.math.Vector4f;
+import com.jme3.profile.AppProfiler;
+import com.jme3.profile.SpStep;
 import com.jme3.renderer.Camera;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Spatial;
@@ -44,6 +46,8 @@ import com.jme3.texture.Texture3D;
 import com.jme3.texture.TextureImage;
 
 import java.util.HashSet;
+import java.util.concurrent.TimeUnit;
+
 import org.lwjgl.opengl.GL45;
 
 /**
@@ -163,10 +167,14 @@ public class VoxelizationPass extends RasterTask implements GeometryRenderHandle
         mipmapper.set("VoxelMap", voxelMap);
         mipmapper.set("TargetLevel", target);
         WorkSize work = new WorkSize();
-        for (int i = 0; n >= 2; i++) {
+        for (int i = 0; n > 4; i++) {
+            AppProfiler profiler = context.getRenderManager().getProfiler();
+            if (profiler != null) {
+                profiler.appSubStep("Update voxel mipmap level " + i);
+            }
             target.setLevel(i + 1);
             mipmapper.set("SourceLevel", i);
-            mipmapper.execute(work.set((n = n >> 1), 1));
+            mipmapper.execute(work.set((n = n >> 1) >> 2, 4));
         }
 
         context.getForcedMaterial().pop();

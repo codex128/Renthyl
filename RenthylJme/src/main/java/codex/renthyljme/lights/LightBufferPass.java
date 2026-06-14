@@ -4,7 +4,6 @@
  */
 package codex.renthyljme.lights;
 
-import codex.renthyl.definitions.arrays.FloatArrayDef;
 import codex.renthyl.resources.ResourceAllocator;
 import codex.renthyl.sockets.PointerSocket;
 import codex.renthyl.sockets.Socket;
@@ -12,16 +11,11 @@ import codex.renthyl.sockets.TransitiveSocket;
 import codex.renthyl.sockets.allocation.AllocationSocket;
 import codex.renthyl.sockets.collections.CollectorSocket;
 import codex.renthyl.tasks.AbstractTask;
-import com.jme3.light.DirectionalLight;
+import codex.renthyljme.shadowsnew.ShadowMask;
 import com.jme3.light.Light;
-import com.jme3.light.LightProbe;
-import com.jme3.light.PointLight;
-import com.jme3.light.SpotLight;
-import com.jme3.math.ColorRGBA;
-import com.jme3.math.Vector3f;
 
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 /**
  *
@@ -30,7 +24,7 @@ import java.util.Collection;
 public class LightBufferPass extends AbstractTask {
 
     private final CollectorSocket<Light> lights = new CollectorSocket<>(this);
-    private final TransitiveSocket<Light[]> lightShadowMapping = new TransitiveSocket<>(this);
+    private final TransitiveSocket<List<Light>> lightShadowMapping = new TransitiveSocket<>(this);
     private final AllocationSocket<LightBuffer> lightData;
     private final LightBufferDef dataDef = new LightBufferDef();
 
@@ -55,7 +49,7 @@ public class LightBufferPass extends AbstractTask {
         return lights;
     }
 
-    public PointerSocket<Light[]> getLightShadowMapping() {
+    public PointerSocket<List<Light>> getLightShadowMapping() {
         return lightShadowMapping;
     }
 

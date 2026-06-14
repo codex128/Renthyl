@@ -1,6 +1,7 @@
 package codex.renthyljme.lights;
 
 import codex.jmecompute.opengl.GLComputeShader;
+import codex.renthyljme.shadowsnew.ShadowMask;
 import com.jme3.light.*;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
@@ -25,6 +26,7 @@ public class LightBuffer {
     public LightBuffer(int lightCapacity) {
         data = BufferUtils.createFloatBuffer(lightCapacity * FLOATS_PER_LIGHT);
     }
+
     public LightBuffer(FloatBuffer data) {
         this.data = data;
     }
@@ -33,7 +35,7 @@ public class LightBuffer {
         fill(lights, null);
     }
 
-    public void fill(Collection<Light> lights, Light[] lightShadowMap) {
+    public void fill(Collection<Light> lights, List<Light> shadowLights) {
         data.clear();
         probes.clear();
         ambient.set(0f, 0f, 0f, 0f);
@@ -52,11 +54,11 @@ public class LightBuffer {
                 break;
             }
             int id = l.getType().getId();
-            if (lightShadowMap != null) {
+            if (shadowLights != null) {
                 if (id > 3) {
                     throw new IllegalStateException("Light type id is larger than two bits: cannot pack shadow indices.");
                 }
-                int shadowIndex = indexOf(lightShadowMap, l);
+                int shadowIndex = shadowLights.indexOf(l);
                 if (shadowIndex >= 0) {
                     id += (shadowIndex + 1) << 2;
                 }
@@ -70,7 +72,7 @@ public class LightBuffer {
                     // = 7 used elements = 5 unused elements
                     DirectionalLight dl = (DirectionalLight) l;
                     putVector(dl.getDirection());
-                    advance(5);
+                    //advance(5);
                 } break;
                 case Point: {
                     // 3 for color
@@ -81,7 +83,7 @@ public class LightBuffer {
                     PointLight pl = (PointLight) l;
                     putVector(pl.getPosition());
                     data.put(pl.getInvRadius());
-                    advance(4);
+                    //advance(4);
                 } break;
                 case Spot: {
                     // 3 for color
@@ -170,15 +172,6 @@ public class LightBuffer {
 
     public int capacity() {
         return data.capacity() / FLOATS_PER_LIGHT;
-    }
-
-    private static int indexOf(Object[] array, Object el) {
-        for (int i = 0; i < array.length; i++) {
-            if (array[i] == el) {
-                return i;
-            }
-        }
-        return -1;
     }
 
 }

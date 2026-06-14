@@ -20,6 +20,7 @@ import com.jme3.light.PointLight;
 import com.jme3.light.SpotLight;
 import com.jme3.texture.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -35,7 +36,7 @@ public class ShadowComposerPass extends RasterTask {
     private final CollectorSocket<ShadowMap> shadowMaps = new CollectorSocket<>(this);
     private final ArgumentSocket<String> readNormalsLambda = new ArgumentSocket<>(this);
     private final AllocationSocket<Texture2D> shadowMask;
-    private final ValueSocket<Light[]> lightShadowIndices = new ValueSocket<>(this);
+    private final ValueSocket<List<Light>> lightShadowIndices = new ValueSocket<>(this);
     private final TextureDef<Texture2D> contributionDef = TextureDef.texture2D();
     private final GLComputeShader shader;
     private final WorkSize work = new WorkSize();
@@ -43,6 +44,7 @@ public class ShadowComposerPass extends RasterTask {
 
     public ShadowComposerPass(AssetManager assetManager, ResourceAllocator allocator) {
         addSockets(sceneDepth, sceneNormals, shadowMaps, lightShadowIndices);
+        lightShadowIndices.setValue(new ArrayList<>());
         shadowMask = addSocket(new AllocationSocket<>(this, allocator, contributionDef));
         contributionDef.setFormat(Image.Format.R32F);
         shader = UniversalShaderLoader.loadComputeShader(assetManager, "RenthylJme/MatDefs/Shadows/ShadowCompose.glsl");
@@ -94,22 +96,24 @@ public class ShadowComposerPass extends RasterTask {
         // render each shadow map to the composed image
         int nextIndex = 0;
         List<ShadowMap> maps = shadowMaps.acquire();
-        Light[] indexMap = new Light[Math.min(maps.size(), MAX_SHADOW_LIGHTS)];
-        lightShadowIndices.setValue(indexMap);
+//        Light[] indexMap = new Light[Math.min(maps.size(), MAX_SHADOW_LIGHTS)];
+//        lightShadowIndices.setValue(indexMap);
+        lightShadowIndices.getValue().clear();
         for (ShadowMap m : maps) {
             if (m == null) {
                 continue;
             }
-            int i = indexOf(indexMap, m.getLight());
-            if (i < 0 && nextIndex < MAX_SHADOW_LIGHTS) {
-                indexMap[i = nextIndex++] = m.getLight();
+            int i = lightShadowIndices.getValue().indexOf(m.getLight());
+            if (i < 0 && lightShadowIndices.getValue().size() < MAX_SHADOW_LIGHTS) {
+                i = lightShadowIndices.getValue().size();
+                lightShadowIndices.getValue().add(m.getLight());
             }
             if (i >= 0) {
                 shader.set("ShadowMap", m.getMap());
                 shader.set("LightViewProjectionMatrix", m.getProjection());
                 shader.set("LightType", m.getLight().getType().getId());
                 shader.set("LightIndex", i);
-                shader.set("LightRange", m.getRange());
+                //shader.set("LightRange", m.getRange());
                 if (normals != null) {
                     uploadLightPosition(m.getLight());
                 }
@@ -164,7 +168,7 @@ public class ShadowComposerPass extends RasterTask {
         return shadowMask;
     }
 
-    public Socket<Light[]> getLightShadowMapping() {
+    public Socket<List<Light>> getLightShadowMapping() {
         return lightShadowIndices;
     }
 

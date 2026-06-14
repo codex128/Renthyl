@@ -3,6 +3,8 @@ package codex.renthyl.tasks.utils;
 import codex.renthyl.sockets.Socket;
 import codex.renthyl.tasks.Frame;
 
+import java.util.function.Function;
+
 /**
  * Frame containing one socket.
  *
@@ -12,8 +14,8 @@ public class SocketFrame <T extends Socket> extends Frame {
 
     private final T socket;
 
-    public SocketFrame(T socket) {
-        this.socket = addSocket(socket);
+    public SocketFrame(Function<SocketFrame<T>, T> generator) {
+        this.socket = addSocket(generator.apply(this));
     }
 
     /**

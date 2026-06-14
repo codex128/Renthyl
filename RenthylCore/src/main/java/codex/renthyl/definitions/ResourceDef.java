@@ -81,5 +81,18 @@ public interface ResourceDef <T> extends Disposer<T> {
     static boolean isPerfectEvaluation(Float score) {
         return score != null && score <= 0f;
     }
+
+    /**
+     * Returns the sum of {@code score} and {@code add} if {@code score} is not null.
+     * Otherwise returns null.
+     *
+     * @param score
+     * @param add
+     * @return
+     */
+    static Float addEval(Float score, float add) {
+        if (score == null) return null;
+        else return score + add;
+    }
     
 }

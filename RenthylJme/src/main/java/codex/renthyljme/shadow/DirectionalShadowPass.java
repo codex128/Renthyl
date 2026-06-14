@@ -80,10 +80,10 @@ public class DirectionalShadowPass extends RasterTask implements Occlusion<Direc
         farFrustum = Math.min(farFrustum, nearFrustum + radius * 2f);
 
         int size = baseMapSize;
-        float splitLength = (farFrustum - nearFrustum) / shadowMaps.size();
+        float cascadeLength = (farFrustum - nearFrustum) / shadowMaps.size();
 
         for (ShadowMapSocket socket : shadowMaps) {
-            farFrustum = nearFrustum + splitLength;
+            farFrustum = nearFrustum + cascadeLength;
 
             // configure camera
             camera.resize(size, size, false);

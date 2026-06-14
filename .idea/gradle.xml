@@ -19,6 +19,7 @@
         <option name="gradleHome" value="" />
         <option name="modules">
           <set>
+            <option value="$PROJECT_DIR$/../JMECompute/JMECompute" />
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/RenthylCore" />
             <option value="$PROJECT_DIR$/RenthylJme" />

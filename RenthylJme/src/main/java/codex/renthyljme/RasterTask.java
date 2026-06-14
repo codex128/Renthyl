@@ -3,6 +3,8 @@ package codex.renthyljme;
 import codex.renthyl.GlobalAttributes;
 import codex.renthyl.sockets.TransitiveSocket;
 import codex.renthyl.tasks.AbstractTask;
+import com.jme3.profile.AppProfiler;
+import com.jme3.profile.SpStep;
 
 public abstract class RasterTask extends AbstractTask {
 
@@ -24,7 +26,14 @@ public abstract class RasterTask extends AbstractTask {
     @Override
     public void render() {
         context = contextSocket.acquireOrThrow(getClass().getName() + " requires access to context.");
+        AppProfiler profiler = context.getRenderManager().getProfiler();
+        if (profiler != null) {
+            profiler.appSubStep(getClass().getSimpleName());
+        }
         super.render();
+        if (profiler != null) {
+            profiler.appSubStep(getClass().getSimpleName());
+        }
         context = null; // set back to null so that context is used at the expected time only
     }
 

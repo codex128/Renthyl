@@ -30,6 +30,10 @@ uniform vec3 g_CameraPosition;
     uniform sampler2D m_ShadowMask;
 #endif
 
+const int DIRECTIONAL_LIGHT_STRIDE = 7;
+const int POINT_LIGHT_STRIDE = 8;
+const int SPOT_LIGHT_STRIDE = 12;
+
 void main() {
     vec3 wpos = PBRLightingUtils_getWorldPosition();
     vec3 worldViewDir = normalize(g_CameraPosition - wpos);
@@ -44,26 +48,37 @@ void main() {
     PBRLightingUtils_calculatePreLightingValues(surface);
 
     #ifdef SHADOW_MASK
-        vec2 uv = vec2(gl_FragCoord.xy) / textureSize(m_ShadowMask, 0);
+        vec2 screenspaceCoord = vec2(gl_FragCoord.xy) / textureSize(m_ShadowMask, 0);
     #endif
 
     // Calculate direct lights
     #ifdef NUM_LIGHTS
-    for (int i = 0; i < m_NumLights; i += 12) {
-        vec4 lightData0 = vec4(m_LightData[i], m_LightData[i + 1], m_LightData[i + 2], m_LightData[i + 3]);
-        int type = int(lightData0.w);
+    for (int i = 0; i < m_NumLights;) {
+        int type = int(m_LightData[i + 3]);
         #ifdef SHADOW_MASK
             int shadow = extractShadowIndex(type);
             if (shadow >= 0) {
-                uint mask = uint(texture(m_ShadowMask, uv).r);
+                uint mask = uint(texture(m_ShadowMask, screenspaceCoord).r);
                 if ((mask & (1u << shadow)) == 0u) {
                     continue;
                 }
             }
         #endif
-        lightData0.w = normalizeLightType(type);
-        vec4 lightData1 = vec4(m_LightData[i + 4], m_LightData[i + 5], m_LightData[i + 6], m_LightData[i + 7]);
-        vec4 lightData2 = vec4(m_LightData[i + 8], m_LightData[i + 9], m_LightData[i + 10], m_LightData[i + 11]);
+        vec4 lightData0 = vec4(m_LightData[i], m_LightData[i + 1], m_LightData[i + 2], normalizeLightType(type));
+        vec4 lightData1 = vec4(m_LightData[i + 4], m_LightData[i + 5], m_LightData[i + 6], 0.0);
+        vec4 lightData2;
+        if (lightData0.w < 0.5) { // directional
+            lightData2 = vec4(0.0);
+            i += DIRECTIONAL_LIGHT_STRIDE;
+        } else if (lightData0.w < 1.5) { // point
+            lightData1.w = m_LightData[i + 7];
+            lightData2 = vec4(0.0);
+            i += POINT_LIGHT_STRIDE;
+        } else { // spot
+            lightData1.w = m_LightData[i + 7];
+            lightData2 = vec4(m_LightData[i + 8], m_LightData[i + 9], m_LightData[i + 10], m_LightData[i + 11]);
+            i += SPOT_LIGHT_STRIDE;
+        }
         PBRLightingUtils_computeDirectLightContribution(
             lightData0, lightData1, lightData2,
             surface

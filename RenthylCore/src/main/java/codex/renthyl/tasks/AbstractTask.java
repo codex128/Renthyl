@@ -11,7 +11,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public abstract class AbstractTask implements Renderable {
 
-    protected static final int UNQUEUED = -2, QUEUING = -1, QUEUED = 0;
+    public static final int UNQUEUED = -2, QUEUING = -1, QUEUED = 0;
 
     protected final Collection<Socket> sockets = new ArrayList<>();
     private final AtomicBoolean claimed = new AtomicBoolean(false);

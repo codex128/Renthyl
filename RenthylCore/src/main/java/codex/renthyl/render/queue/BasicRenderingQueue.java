@@ -88,7 +88,7 @@ public class BasicRenderingQueue implements RenderingQueue {
                     it.remove();
                     worker.render(); // render submitted task
                     lock.lock();
-                    inactive.signalAll();
+                    inactive.signalAll(); // queue state has changed: signal waiting threads
                     lock.unlock();
                     continue loop; // search queue for next task
                 }

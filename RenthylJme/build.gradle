@@ -18,8 +18,8 @@ project.ext {
 
 dependencies {
     implementation project(":RenthylCore")
-    //implementation project(":JMECompute")
-    implementation "com.github.codex128:JMECompute:$computeVer"
+    implementation project(":JMECompute")
+    //implementation "com.github.codex128:JMECompute:$computeVer"
     implementation "org.jmonkeyengine:jme3-core:$jmeVer"
     implementation "org.jmonkeyengine:jme3-lwjgl3:$jmeVer"
     implementation "org.jmonkeyengine:jme3-effects:$jmeVer"
