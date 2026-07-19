@@ -47,8 +47,6 @@ public class PointShadowPass extends RasterTask implements Occlusion<PointLight>
 
     private final ArgumentSocket<PointLight> light = new ArgumentSocket<>(this);
     private final TransitiveSocket<ShadowMask> mask = new TransitiveSocket<>(this);
-    private final TransitiveSocket<Texture2D> sceneDepth = new TransitiveSocket<>(this);
-    private final TransitiveSocket<Texture2D> sceneNormals = new TransitiveSocket<>(this);
     private final TransitiveSocket<GeometryQueue> occluders = new TransitiveSocket<>(this);
     private final TransitiveSocket<GeometryQueue> receivers = new OptionalSocket<>(this, false);
     private final DefinedAllocationSocket<FrameBufferDef, FrameBuffer> frameBuffer;
@@ -76,6 +74,10 @@ public class PointShadowPass extends RasterTask implements Occlusion<PointLight>
     @Override
     protected void renderTask() {
 
+        ShadowMask maskMap = mask.acquireOrThrow();
+        int maskIndex = maskMap.getNextMaskIndex();
+        if (maskIndex < 0) return;
+
         PointLight pl = light.acquireOrThrow("Light required.");
 
         context.getCamera().push();
@@ -88,9 +90,6 @@ public class PointShadowPass extends RasterTask implements Occlusion<PointLight>
         frameBuffer.getDef().setDepthTarget(shadow);
         FrameBuffer fbo = frameBuffer.acquire();
         context.getFrameBuffer().pushValue(fbo);
-
-        ShadowMask maskMap = mask.acquireOrThrow();
-        int maskIndex = maskMap.getNextMaskIndex();
 
         GeometryQueue occluderQueue = occluders.acquireOrThrow("Occluder queue required.");
         BoundingBox camBounds = new BoundingBox();

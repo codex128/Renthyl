@@ -165,7 +165,7 @@ public class Main {
 public class ConcatText extends AbstractTask {
 
     private final String text1, text2;
-    public final ArgumentSocket<String> resultSocket = new ArithmeticException<>(this);
+    public final ArgumentSocket<String> resultSocket = new ArgumentSocket<>(this);
 
     public ConcatText(String text1, String text2) {
         this.text1 = text1;
@@ -183,7 +183,7 @@ public class ConcatText extends AbstractTask {
 
 public class PrintToConsole extends AbstractTask {
 
-    private final TransitiveSocket<String> textSocket = new TransitiveSocket<>(this);
+    public final TransitiveSocket<String> textSocket = new TransitiveSocket<>(this);
 
     public PrintToConsole(String text) {
         this.text = text;

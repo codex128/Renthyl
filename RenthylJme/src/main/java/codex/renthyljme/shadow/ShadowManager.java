@@ -4,8 +4,11 @@
  */
 package codex.renthyljme.shadow;
 
+import codex.renthyl.sockets.Barrier;
 import codex.renthyl.sockets.Socket;
 import codex.renthyl.sockets.ValueSocket;
+import codex.renthyl.sockets.allocation.AllocationSocket;
+import codex.renthyl.sockets.allocation.DefinedAllocationSocket;
 import codex.renthyljme.geometry.GeometryQueue;
 import codex.renthyl.resources.ResourceAllocator;
 import codex.renthyl.sockets.collections.CollectorSocket;
@@ -29,23 +32,29 @@ public class ShadowManager extends Frame {
 
     private final AssetManager assetManager;
     private final ResourceAllocator allocator;
-    private final CollectorSocket<ShadowMap> shadowMaps = new CollectorSocket<>(this);
+    private final DefinedAllocationSocket<ShadowMaskDef, ShadowMask> mask;
     private final ValueSocket<Integer> numLights = new ValueSocket<>(this, 0);
     private final ShadowQueuePass queues = new ShadowQueuePass();
-    private final Collection<Occlusion> occluders = new ArrayList<>();
+    private final Barrier output = new Barrier();
 
     public ShadowManager(AssetManager assetManager, ResourceAllocator allocator) {
         this.assetManager = assetManager;
         this.allocator = allocator;
-        addSockets(shadowMaps, numLights);
+        addSockets(numLights);
+        mask = addSocket(new DefinedAllocationSocket<>(this, allocator, new ShadowMaskDef(assetManager)));
     }
 
-    private <T extends Light> void addOcclusion(Occlusion<T> occlusion) {
+    public <T extends Occlusion> T addOcclusion(T occlusion) {
         occlusion.getOccluders().setUpstream(queues.getOccluders());
         occlusion.getReceivers().setUpstream(queues.getReceivers());
-        shadowMaps.addCollectionSource(occlusion.getShadowMaps());
+        occlusion.getShadowMask().setUpstream(mask);
         numLights.setValue(numLights.getValue() + 1);
-        occluders.add(occlusion);
+        output.add(occlusion);
+        return occlusion;
+    }
+
+    public boolean removeOcclusion(Occlusion occlusion) {
+        return output.remove(occlusion);
     }
 
     public DirectionalShadowPass addDirectionalLightSource(Socket<DirectionalLight> socket, int size, int splits) {
