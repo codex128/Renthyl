@@ -21,12 +21,14 @@ dependencies {
 ```
 
 Create a FrameGraph object, attach tasks to render to it, and render the graph.
+Pass the current frame time in seconds and the shared `GlobalAttributes`
+(import `codex.renthyl.BasicGlobalAttributes`):
 
 ```java
 FrameGraph fg = new FrameGraph();
 fg.addTask(new MyCustomTask());
 fg.addTask(new SomeOtherTask());
-fg.render();
+fg.render(new BasicGlobalAttributes(), timePerFrame);
 ```
 
 ### Use with JMonkeyEngine 3.8+
@@ -47,12 +49,12 @@ JmeFrameGraph fg = new JmeFrameGraph(assetManager);
 viewPort.setPipeline(fg);
 
 // create resource allocator
-ResourceAllocatorState allocator = new ResourceAllocatorState();
+ResourceAllocationState allocator = new ResourceAllocationState();
 stateManager.attach(allocator);
 
 // create tasks
 SceneEnqueuePass enqueue = SceneEnqueuePass.withSingleQueue();
-GeometryPass geometry = new GeometryTask(allocator);
+GeometryPass geometry = new GeometryPass(allocator);
 OutputPass out = fg.addTask(new OutputPass());
 
 // share task resources
